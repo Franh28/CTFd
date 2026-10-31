@@ -28,6 +28,19 @@ fi
 # Initialize database
 flask db upgrade
 
+# Seed challenges (runs every start but scripts are idempotent — they skip if the challenge already exists)
+SEED_CHALLENGES=${SEED_CHALLENGES:-true}
+if [[ "$SEED_CHALLENGES" == "true" ]]; then
+    echo "Seeding challenges..."
+    for seed_script in /opt/CTFd/seeds/*.py; do
+        if [ -f "$seed_script" ]; then
+            echo "  → Running $seed_script"
+            python "$seed_script"
+        fi
+    done
+    echo "Challenge seeding complete."
+fi
+
 # Start CTFd
 echo "Starting CTFd"
 exec gunicorn 'CTFd:create_app()' \
