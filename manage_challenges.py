@@ -27,9 +27,9 @@ import sys
 # Importa CTFd desde la raíz del proyecto
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seeds", "config.yml")
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seeds", "config.json")
 
-# Mapa nombre de reto → clave en config.yml
+# Mapa nombre de reto → clave en config.json
 # Añade aquí cada nuevo reto que crees.
 CHALLENGE_KEY_MAP = {
     "Broken Login": "sqli_login",
@@ -43,17 +43,18 @@ CHALLENGE_KEY_MAP = {
 # ---------------------------------------------------------------------------
 
 def load_yaml_config() -> dict:
-    import yaml
+    import json
     if not os.path.exists(CONFIG_PATH):
         return {"challenges": {}}
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {"challenges": {}}
+        return json.load(f) or {"challenges": {}}
 
 
 def save_yaml_config(data: dict) -> None:
-    import yaml
+    import json
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
 
 
 def sync_config(challenge_name: str, state: str) -> None:

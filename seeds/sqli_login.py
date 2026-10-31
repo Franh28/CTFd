@@ -22,16 +22,16 @@ CONFIG_KEY = "sqli_login"
 
 
 def load_config() -> dict:
-    """Lee seeds/config.yml y devuelve la sección de este reto."""
-    import yaml  # PyYAML — ya incluido en requirements.txt de CTFd
+    """Lee seeds/config.json y devuelve la sección de este reto."""
+    import json
 
-    config_path = os.path.join(SEEDS_DIR, "config.yml")
+    config_path = os.path.join(SEEDS_DIR, "config.json")
     if not os.path.exists(config_path):
         # Sin config → comportamiento por defecto: activado y visible
         return {"enabled": True, "state": "visible"}
 
     with open(config_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+        data = json.load(f)
 
     return data.get("challenges", {}).get(CONFIG_KEY, {"enabled": True, "state": "visible"})
 

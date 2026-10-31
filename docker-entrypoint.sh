@@ -33,6 +33,8 @@ SEED_CHALLENGES=${SEED_CHALLENGES:-true}
 if [[ "$SEED_CHALLENGES" == "true" ]]; then
     echo "Seeding challenges..."
     for seed_script in /opt/CTFd/seeds/*.py; do
+        # Ignorar plantillas (ficheros que empiezan por TEMPLATE_)
+        case "$(basename "$seed_script")" in TEMPLATE_*) continue ;; esac
         if [ -f "$seed_script" ]; then
             echo "  → Running $seed_script"
             python "$seed_script"
