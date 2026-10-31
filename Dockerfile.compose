@@ -1,0 +1,2 @@
+   FROM ctfd-ctfd:latest
+   COPY --chown=1001:1001 . /opt/CTFd
