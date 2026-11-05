@@ -6,7 +6,7 @@ seeds/TEMPLATE_challenge.py
 INSTRUCCIONES:
   1. Copia este fichero con el nombre de tu reto, p.ej:  seeds/xss_reflejado.py
   2. Rellena las secciones marcadas con  ← EDITAR
-  3. Añade el reto a seeds/config.yml
+  3. Añade el reto a seeds/config.json
   4. Regístralo en manage_challenges.py  (CHALLENGE_KEY_MAP)
   5. Haz commit
 """
