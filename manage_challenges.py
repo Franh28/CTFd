@@ -33,6 +33,7 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seeds", 
 # Añade aquí cada nuevo reto que crees.
 CHALLENGE_KEY_MAP = {
     "Broken Login": "sqli_login",
+    "La Cápsula del Tiempo de 1976": "sql_challenge",
     # "XSS Challenge": "xss_challenge",
     # "Crypto RSA":    "crypto_rsa",
 }

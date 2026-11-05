@@ -4,6 +4,10 @@
     "sqli_login": {
       "enabled": true,
       "state": "visible"
+    },
+    "sql_challenge": {
+      "enabled": true,
+      "state": "visible"
     }
   }
 }
