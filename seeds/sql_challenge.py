@@ -75,15 +75,8 @@ Por suerte para ti, el becario de sistemas se ha dejado encendido el **Previsual
 ### 🎯 Objetivo
 Utiliza el buscador del museo para unir la tabla secreta de la cápsula del tiempo y extraer la flag del 50º Aniversario. *(¡No necesitas saber SQL de antemano, fíjate en los botones de ejemplo y en el monitor en vivo!)*
 
-### 🌐 Conexión
-```
-http://localhost:5002
-```
-
-> **Nota para ejecutar el reto en local (todo incluido en este mismo archivo):**
-> ```bash
-> python seeds/sql_challenge.py --serve
-> ```
+### 🌐 Acceso al reto
+👉 **[🕹️ Abrir el Catálogo del Museo (La Cápsula de 1976)](/capsula-1976/)**
 """
 
 # La flag exacta que el participante debe enviar
@@ -849,24 +842,24 @@ def render_museum_html(ctx: dict) -> str:
             👇 <strong>¿No sabes SQL?</strong> Pulsa estos 3 botones de búsqueda rápida y observa en la consola de abajo cómo habla el buscador con la base de datos:
           </p>
           <div class="quick-buttons">
-            <a href="/?preset=1" style="text-decoration:none;">
+            <a href="?preset=1" style="text-decoration:none;">
               <button type="button" class="btn-preset {btn1_active}">
                 📼 Botón 1: Ver reliquias de los 70
               </button>
             </a>
-            <a href="/?preset=2" style="text-decoration:none;">
+            <a href="?preset=2" style="text-decoration:none;">
               <button type="button" class="btn-preset {btn2_active}">
                 🤝 Botón 2: Incluir donaciones de antiguos alumnos
               </button>
             </a>
-            <a href="/?preset=3" style="text-decoration:none;">
+            <a href="?preset=3" style="text-decoration:none;">
               <button type="button" class="btn-preset {btn3_active}">
                 🔧 Botón 3: Modo Prueba del Archivero (--)
               </button>
             </a>
           </div>
 
-          <form method="GET" action="/" id="search-form">
+          <form method="GET" action="" id="search-form">
             <div class="search-row">
               <input
                 type="text"
@@ -878,7 +871,7 @@ def render_museum_html(ctx: dict) -> str:
                 autocomplete="off"
               >
               <button type="submit" class="btn-search">Buscar en el Archivo</button>
-              <a href="/" class="btn-reset">Limpiar</a>
+              <a href="?" class="btn-reset">Limpiar</a>
             </div>
           </form>
 
