@@ -162,7 +162,7 @@ INNOSOFT{50_4n1v3rs4r10_d3sd3_l4_t4rj3t4_p3rf0r4d4}
 _XOR_KEY = 76
 _ENC_FLAG_JSON = json.dumps([ord(c) ^ _XOR_KEY for c in FLAG_CONTENT])
 
-EMBEDDED_CHALLENGE_PAGE_HTML = r"""\
+EMBEDDED_CHALLENGE_PAGE_HTML = r"""
 <style>
   .museum-wrap {
     --bg-dark: #0b0f19;
