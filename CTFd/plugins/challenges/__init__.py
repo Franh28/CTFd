@@ -1,3 +1,4 @@
+import datetime
 from dataclasses import dataclass
 
 from flask import Blueprint
@@ -150,12 +151,33 @@ class BaseChallenge(object):
         :param request:
         :return:
         """
+        previous_state = challenge.state
+        now = datetime.datetime.utcnow()
+
         data = dict(request.form or request.get_json() or {})
+        raw_scheduled_at = data.get("scheduled_at")
         if "scheduled_at" in data:
             try:
                 data["scheduled_at"] = parse_iso_datetime(data["scheduled_at"])
             except ValueError:
                 raise ChallengeUpdateException("Invalid input for 'scheduled_at'")
+
+        target_state = data.get("state", previous_state)
+        if target_state == "visible":
+            if previous_state != "visible":
+                # Al pasar ESTE reto de hidden a visible, arrancamos su contador individual de 20 min en servidor
+                explicit_sched = data.get("scheduled_at")
+                if explicit_sched is not None and (explicit_sched - now).total_seconds() > 300:
+                    data["scheduled_at"] = explicit_sched
+                else:
+                    data["scheduled_at"] = now
+            elif "scheduled_at" in data and data["scheduled_at"] is not None:
+                # Si el admin pulsa "Iniciar/Reiniciar 20 min" en este reto, usamos la hora exacta del servidor
+                if abs((data["scheduled_at"] - now).total_seconds()) <= 300 or str(raw_scheduled_at).startswith("1970-"):
+                    data["scheduled_at"] = now
+        elif "state" in data and target_state != "visible":
+            # Al ocultar el reto, limpiamos scheduled_at para que al volver a hacerlo visible empiece en 20:00
+            data["scheduled_at"] = None
 
         for attr, value in data.items():
             # We need to set these to floats so that the next operations don't operate on strings

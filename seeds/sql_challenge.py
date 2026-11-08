@@ -559,6 +559,10 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       primeros catedráticos de 1976 guardaron una <strong>Cápsula del Tiempo con la Flag</strong> en la base de datos,
       pero el Archivero Jefe la ha movido a otra tabla para que no salga en el buscador público.
     </p>
+    <div id="ctf-server-timer-box" style="margin-top:14px; padding:10px 16px; border-radius:10px; background:rgba(15,23,42,0.92); border:1px solid #334155; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <span id="ctf-server-timer-label" style="font-weight:700; color:#e2e8f0; font-size:0.92rem;">⏱️ Sincronizando cronómetro del reto con el servidor...</span>
+      <span id="ctf-server-timer-clock" style="font-family:Consolas,monospace; font-size:1.15rem; font-weight:800; padding:4px 12px; border-radius:6px; background:#1e293b; color:#38bdf8;">--:--</span>
+    </div>
   </div>
 
   <div class="museum-grid">
@@ -1083,6 +1087,101 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   // Inicializar vista por defecto
   renderLiveQuery();
   runUserSearch();
+
+  // Sincronización del cronómetro individual de 20 min con el servidor CTFd
+  (function initServerTimerSync() {
+    const CHALLENGE_TITLE = "La Cápsula del Tiempo de 1976";
+    const box = document.getElementById("ctf-server-timer-box");
+    const lbl = document.getElementById("ctf-server-timer-label");
+    const clk = document.getElementById("ctf-server-timer-clock");
+    if (!box || !lbl || !clk) return;
+    let endAtMs = null;
+    let isTimerActive = false;
+
+    function fmt(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    }
+
+    function renderTick() {
+      if (!isTimerActive || endAtMs === null) {
+        box.style.borderColor = "#475569";
+        lbl.innerHTML = "⏸️ <strong>Cronómetro de este reto (20:00):</strong> Pendiente de inicio en el servidor";
+        clk.textContent = "20:00";
+        clk.style.background = "#1e293b";
+        clk.style.color = "#94a3b8";
+        return;
+      }
+      const rem = Math.max(0, Math.round((endAtMs - Date.now()) / 1000));
+      clk.textContent = fmt(rem);
+      if (rem <= 0) {
+        box.style.borderColor = "#ef4444";
+        lbl.innerHTML = "🔒 <strong style='color:#f87171;'>TIEMPO AGOTADO (00:00):</strong> Este reto ya ha cerrado el envío de flags en CTFd.";
+        clk.style.background = "#7f1d1d";
+        clk.style.color = "#fecaca";
+      } else if (rem <= 300) {
+        box.style.borderColor = "#f59e0b";
+        lbl.innerHTML = "⚠️ <strong style='color:#fbbf24;'>¡Últimos minutos! Tiempo restante en servidor para enviar la flag:</strong>";
+        clk.style.background = "#78350f";
+        clk.style.color = "#fde68a";
+      } else {
+        box.style.borderColor = "#22c55e";
+        lbl.innerHTML = "⏱️ <strong>Tiempo restante en servidor para resolver y enviar la flag:</strong>";
+        clk.style.background = "#052e16";
+        clk.style.color = "#4ade80";
+      }
+    }
+
+    async function syncServer() {
+      try {
+        const res = await fetch("/api/v1/challenges/timers", { credentials: "same-origin", cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && Array.isArray(json.data)) {
+            const item = json.data.find(c => c.name === CHALLENGE_TITLE);
+            if (item) {
+              isTimerActive = Boolean(item.timer_active) && item.remaining_seconds !== null && item.remaining_seconds !== undefined;
+              endAtMs = isTimerActive ? (Date.now() + Math.max(0, Number(item.remaining_seconds)) * 1000) : null;
+              renderTick();
+              return;
+            }
+          }
+        }
+      } catch (_e) {}
+      try {
+        const lRes = await fetch("/api/v1/challenges", { credentials: "same-origin", cache: "no-store" });
+        if (!lRes.ok) return;
+        const lJson = await lRes.json();
+        if (!lJson || !Array.isArray(lJson.data)) return;
+        const found = lJson.data.find(c => c.name === CHALLENGE_TITLE);
+        if (!found) return;
+        const dRes = await fetch("/api/v1/challenges/" + found.id, { credentials: "same-origin", cache: "no-store" });
+        if (!dRes.ok) return;
+        const dJson = await dRes.json();
+        if (dJson && dJson.data) {
+          const sched = dJson.data.scheduled_at;
+          if (sched && typeof sched === "string") {
+            let norm = sched.trim();
+            if (!norm.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(norm)) norm += "Z";
+            const startMs = Date.parse(norm);
+            if (!Number.isNaN(startMs) && startMs > 1000000000000) {
+              isTimerActive = true;
+              endAtMs = startMs + 1200000;
+              renderTick();
+              return;
+            }
+          }
+          isTimerActive = false;
+          endAtMs = null;
+          renderTick();
+        }
+      } catch (_e2) {}
+    }
+
+    syncServer();
+    setInterval(renderTick, 1000);
+    setInterval(syncServer, 8000);
+  })();
 })();
 </script>
 """.replace("__XOR_KEY__", str(_XOR_KEY)).replace("__ENC_FLAG_JSON__", _ENC_FLAG_JSON)

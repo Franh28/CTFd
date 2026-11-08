@@ -186,15 +186,20 @@ class Hint(Resource):
                     )
 
         view = "locked"
-        unlocked = HintUnlocks.query.filter_by(
-            account_id=user.account_id, target=hint.id
-        ).first()
-        if unlocked:
+        if (hint.cost or 0) == 0 and not hint.prerequisites:
             view = "unlocked"
+        else:
+            unlocked = HintUnlocks.query.filter_by(
+                account_id=user.account_id, target=hint.id
+            ).first()
+            if unlocked:
+                view = "unlocked"
 
         if is_admin():
             if request.args.get("preview", False):
                 view = "admin"
+            else:
+                view = "unlocked"
 
         response = HintSchema(view=view).dump(hint)
 

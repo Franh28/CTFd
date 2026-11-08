@@ -30,7 +30,8 @@
 				Use this to give a brief introduction to your challenge.
 			</small>
 		</label>
-		<textarea id="desc-editor" class="form-control chal-desc-editor markdown" name="description" rows="10">{{ challenge.description }}</textarea>
+		<textarea id="desc-editor" class="form-control chal-desc-editor markdown" name="description"
+			rows="10">{{ challenge.description }}</textarea>
 	</div>
 	{% endblock %}
 
@@ -54,7 +55,8 @@
 				Use this to specify a link, hostname, or connection instructions for your challenge.
 			</small>
 		</label>
-		<input type="text" class="form-control chal-connection-info" name="connection_info" value="{{ challenge.connection_info | default('', true) }}">
+		<input type="text" class="form-control chal-connection-info" name="connection_info"
+			value="{{ challenge.connection_info | default('', true) }}">
 	</div>
 	{% endblock %}
 
@@ -75,10 +77,12 @@
 		<label for="position">
 			Position<br>
 			<small class="form-text text-muted">
-				This is used to order the challenge. Lower positions are first. Position 0 goes to the end to be sorted by challenge value.
+				This is used to order the challenge. Lower positions are first. Position 0 goes to the end to be sorted
+				by challenge value.
 			</small>
 		</label>
-		<input type="number" class="form-control chal-position" name="position" value="{{ challenge.position }}" required>
+		<input type="number" class="form-control chal-position" name="position" value="{{ challenge.position }}"
+			required>
 	</div>
 	{% endblock %}
 
@@ -91,15 +95,17 @@
 			</small>
 		</label>
 		<select name="function" class="custom-select chal-function">
-			<option value="static" {% if challenge.function == "static" %}selected{% endif %}>Static</option>
-			<option value="linear" {% if challenge.function == "linear" %}selected{% endif %}>Linear</option>
-			<option value="logarithmic" {% if challenge.function == "logarithmic" %}selected{% endif %}>Logarithmic</option>
+			<option value="static" {% if challenge.function=="static" %}selected{% endif %}>Static</option>
+			<option value="linear" {% if challenge.function=="linear" %}selected{% endif %}>Linear</option>
+			<option value="logarithmic" {% if challenge.function=="logarithmic" %}selected{% endif %}>Logarithmic
+			</option>
 		</select>
 		<small class="form-text text-muted">
 			<ul>
 				<li>Static: Challenge <code>Value</code> is awarded as-is</li>
 				<li>Linear: Calculated as <code>Initial - (Decay * SolveCount)</code></li>
-				<li>Logarithmic: Calculated as <code>(((Minimum - Initial) / (Decay^2)) * (SolveCount^2)) + Initial</code></li>
+				<li>Logarithmic: Calculated as
+					<code>(((Minimum - Initial) / (Decay^2)) * (SolveCount^2)) + Initial</code></li>
 			</ul>
 		</small>
 	</div>
@@ -123,11 +129,13 @@
 				<span>The decay value is used differently depending on the above Decay Function</span>
 				<ul>
 					<li>Linear: The amount of points deducted per solve. Equal deduction per solve.</li>
-					<li>Logarithmic: The amount of solves before the challenge reaches its minimum value. Earlier solves will lose less points. Later solves will lose more points</li>
+					<li>Logarithmic: The amount of solves before the challenge reaches its minimum value. Earlier solves
+						will lose less points. Later solves will lose more points</li>
 				</ul>
 			</small>
 		</label>
-		<input type="number" class="form-control chal-decay" min="1" name="decay" value="{{ challenge.decay }}" required>
+		<input type="number" class="form-control chal-decay" min="1" name="decay" value="{{ challenge.decay }}"
+			required>
 	</div>
 	{% endblock %}
 
@@ -150,9 +158,11 @@
 		</label>
 
 		<select class="form-control custom-select" name="logic">
-			<option value="any" {% if challenge.logic == "any" or not challenge.logic %}selected{% endif %}>Require Any Flag</option>
-			<option value="all" {% if challenge.logic == "all" %}selected{% endif %}>Require All Flags</option>
-			<option value="team" {% if challenge.logic == "team" %}selected{% endif %}>Require Any Flags by All Team Members</option>
+			<option value="any" {% if challenge.logic=="any" or not challenge.logic %}selected{% endif %}>Require Any
+				Flag</option>
+			<option value="all" {% if challenge.logic=="all" %}selected{% endif %}>Require All Flags</option>
+			<option value="team" {% if challenge.logic=="team" %}selected{% endif %}>Require Any Flags by All Team
+				Members</option>
 		</select>
 	</div>
 	{% endblock %}
@@ -161,21 +171,38 @@
 	<div class="form-group">
 		<label>
 			Max Attempts<br>
-			<small class="form-text text-muted">Maximum amount of attempts users receive. Leave at 0 for unlimited.</small>
+			<small class="form-text text-muted">Maximum amount of attempts users receive. Leave at 0 for
+				unlimited.</small>
 		</label>
 
-		<input type="number" class="form-control chal-attempts" name="max_attempts" value="{{ challenge.max_attempts }}">
+		<input type="number" class="form-control chal-attempts" name="max_attempts"
+			value="{{ challenge.max_attempts }}">
 	</div>
 	{% endblock %}
 
 	{% block scheduled_at %}
 	<div class="form-group">
 		<label>
-			Scheduled At<br>
-			<small class="form-text text-muted">Optional datetime (in local timezone) when this challenge becomes visible to users. Leave blank to make immediately available if visible.</small>
+			Scheduled At / Contador individual de 20 min (Servidor)<br>
+			<small class="form-text text-muted">Se activa automáticamente en el servidor para <b>este reto</b> al
+				pasarlo de <b>Hidden</b> a <b>Visible</b>. También puedes iniciarlo, reiniciarlo o pararlo manualmente
+				con los botones de al lado.</small>
 		</label>
 
-		<input type="datetime-local" step="1" class="form-control chal-scheduled-at" name="scheduled_at" data-scheduled-at-utc="{{ challenge.scheduled_at.strftime('%Y-%m-%dT%H:%M:%SZ') if challenge.scheduled_at else '' }}">
+		<div class="input-group">
+			<input type="datetime-local" step="1" class="form-control chal-scheduled-at" name="scheduled_at"
+				data-scheduled-at-utc="{{ challenge.scheduled_at.strftime('%Y-%m-%dT%H:%M:%SZ') if (challenge.scheduled_at and challenge.scheduled_at.year >= 2020) else '' }}">
+			<div class="input-group-append">
+					<button type="button" class="btn btn-success"
+						onclick="(function(btn){ const d = new Date(Date.now() - 2000 - (new Date().getTimezoneOffset() * 60000)); document.querySelector('.chal-scheduled-at').value = d.toISOString().slice(0, 19); document.querySelector('select[name=state]').value = 'visible'; btn.closest('form').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); })(this);">
+						▶️ Iniciar / Reiniciar 20 min
+					</button>
+					<button type="button" class="btn btn-outline-danger"
+						onclick="document.querySelector('.chal-scheduled-at').value = ''; this.closest('form').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));">
+						⏹️ Quitar contador
+					</button>
+			</div>
+		</div>
 	</div>
 	{% endblock %}
 
@@ -186,10 +213,11 @@
 			<small class="form-text text-muted">Changes the state of the challenge (e.g. visible, hidden)</small>
 		</label>
 
-		<select class="form-control custom-select" name="state">
-			<option value="visible" {% if challenge.state == "visible" %}selected{% endif %}>Visible</option>
-			<option value="hidden" {% if challenge.state == "hidden" %}selected{% endif %}>Hidden</option>
-		</select>
+			<select class="form-control custom-select" name="state"
+				onchange="if (this.value === 'visible') { const d = new Date(Date.now() - 2000 - (new Date().getTimezoneOffset() * 60000)); document.querySelector('.chal-scheduled-at').value = d.toISOString().slice(0, 19); } else { document.querySelector('.chal-scheduled-at').value = ''; }">
+				<option value="visible" {% if challenge.state=="visible" %}selected{% endif %}>Visible</option>
+				<option value="hidden" {% if challenge.state=="hidden" %}selected{% endif %}>Hidden</option>
+			</select>
 	</div>
 	{% endblock %}
 

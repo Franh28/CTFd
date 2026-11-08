@@ -41,6 +41,7 @@ from CTFd.utils import config, get_config
 from CTFd.utils import user as current_user
 from CTFd.utils.challenges import (
     get_all_challenges,
+    get_challenge_timer_info,
     get_rating_average_for_challenge_id,
     get_solve_counts_for_challenges,
     get_solve_ids_for_user_id,
@@ -200,10 +201,15 @@ class ChallengeList(Resource):
         # will be JSONified back to the client
         response = []
 
-        # Gather all challenge IDs so that we can determine invalid challenge prereqs
-        all_challenge_ids = {
-            c.id for c in Challenges.query.with_entities(Challenges.id).all()
+        # Gather all challenge IDs and live scheduled_at timestamps directly from DB (uncached)
+        live_challenges_map = {
+            c.id: c
+            for c in Challenges.query.with_entities(
+                Challenges.id, Challenges.state, Challenges.scheduled_at
+            ).all()
         }
+        all_challenge_ids = set(live_challenges_map.keys())
+        now_utc = datetime.utcnow()
         for challenge in chal_q:
             if challenge.requirements:
                 requirements = challenge.requirements.get("prerequisites", [])
@@ -255,6 +261,8 @@ class ChallengeList(Resource):
                 continue
 
             # Challenge passes all checks, add it to response
+            live_chal = live_challenges_map.get(challenge.id, challenge)
+            timer_info = get_challenge_timer_info(live_chal, now=now_utc)
             response.append(
                 {
                     "id": challenge.id,
@@ -269,6 +277,10 @@ class ChallengeList(Resource):
                     "tags": challenge.tags,
                     "template": challenge_type.templates["view"],
                     "script": challenge_type.scripts["view"],
+                    "remaining_seconds": timer_info["remaining_seconds"],
+                    "expired": timer_info["expired"],
+                    "expires_at": timer_info["expires_at"],
+                    "timer_active": timer_info["active"],
                 }
             )
 
@@ -308,6 +320,44 @@ class ChallengeList(Resource):
         clear_challenges()
 
         return {"success": True, "data": response}
+
+
+@challenges_namespace.route("/timers")
+class ChallengeTimers(Resource):
+    def get(self):
+        """
+        Devuelve el estado en tiempo real (directo de BD, sin caché) del contador
+        individual de 20 minutos de cada reto visible.
+        """
+        now_utc = datetime.utcnow()
+        chals = (
+            Challenges.query.filter(
+                Challenges.state == "visible"
+            )
+            .order_by(
+                (Challenges.position == 0).asc(),
+                Challenges.position.asc(),
+                Challenges.value,
+                Challenges.id,
+            )
+            .all()
+        )
+        data = []
+        for c in chals:
+            t = get_challenge_timer_info(c, now=now_utc)
+            data.append(
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "category": c.category,
+                    "value": c.value,
+                    "timer_active": t["active"],
+                    "remaining_seconds": t["remaining_seconds"],
+                    "expired": t["expired"],
+                    "expires_at": t["expires_at"],
+                }
+            )
+        return {"success": True, "data": data}
 
 
 @challenges_namespace.route("/types")
@@ -467,7 +517,12 @@ class Challenge(Resource):
             files = [url_for("views.files", path=f.location) for f in chal.files]
 
         for hint in Hints.query.filter_by(challenge_id=chal.id).all():
-            if hint.id in unlocked_hints or ctf_ended():
+            if (
+                hint.id in unlocked_hints
+                or ctf_ended()
+                or is_admin()
+                or ((hint.cost or 0) == 0 and not hint.prerequisites)
+            ):
                 hints.append(
                     {
                         "id": hint.id,
@@ -479,7 +534,12 @@ class Challenge(Resource):
             else:
                 hints.append({"id": hint.id, "cost": hint.cost, "title": hint.title})
 
+        timer_info = get_challenge_timer_info(chal)
         response = chal_class.read(challenge=chal)
+        response["timer"] = timer_info
+        response["remaining_seconds"] = timer_info["remaining_seconds"]
+        response["expired"] = timer_info["expired"]
+        response["timer_active"] = timer_info["active"]
 
         # Get list of solve_ids for current user
         if authed():
@@ -586,6 +646,7 @@ class Challenge(Resource):
             max_attempts=chal.max_attempts,
             attempts=attempts,
             challenge=chal,
+            timer_info=timer_info,
         )
 
         if (
@@ -679,6 +740,15 @@ class ChallengeAttempt(Resource):
             preview = request.args.get("preview", False)
             if preview:
                 challenge = Challenges.query.filter_by(id=challenge_id).first_or_404()
+                timer_info = get_challenge_timer_info(challenge)
+                if timer_info["expired"]:
+                    return {
+                        "success": True,
+                        "data": {
+                            "status": "incorrect",
+                            "message": "⏰ Tiempo agotado (20:00). Este reto ya está cerrado y no admite más envíos de flag.",
+                        },
+                    }
                 chal_class = get_chal_class(challenge.type)
                 response = chal_class.attempt(challenge, request)
                 # TODO: CTFd 4.0 We should remove the tuple strategy for Challenge plugins in favor of ChallengeResponse
@@ -726,6 +796,16 @@ class ChallengeAttempt(Resource):
 
         if not can_access_challenge(challenge, user):
             abort(404)
+
+        timer_info = get_challenge_timer_info(challenge)
+        if timer_info["expired"]:
+            return {
+                "success": True,
+                "data": {
+                    "status": "incorrect",
+                    "message": "⏰ Tiempo agotado (20:00). Este reto ya está cerrado y no admite más envíos de flag.",
+                },
+            }
 
         if challenge.requirements:
             requirements = challenge.requirements.get("prerequisites", [])

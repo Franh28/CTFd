@@ -34,8 +34,8 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seeds", 
 CHALLENGE_KEY_MAP = {
     "Broken Login": "sqli_login",
     "La Cápsula del Tiempo de 1976": "sql_challenge",
-    # "XSS Challenge": "xss_challenge",
-    # "Crypto RSA":    "crypto_rsa",
+    "El Becario de la Gala de Oro": "business_challenge",
+    "El 4.99 de Don Severo": "xss_challenge",
 }
 
 
@@ -87,7 +87,8 @@ def get_all_challenges(app):
 
 
 def set_challenge_state(app, name: str, state: str) -> bool:
-    """Cambia el campo `state` de un reto en la BD. Devuelve True si lo encontró."""
+    """Cambia el campo `state` de un reto en la BD y actualiza su contador de 20 min. Devuelve True si lo encontró."""
+    import datetime
     from CTFd.models import Challenges, db
     from CTFd.cache import clear_challenges
 
@@ -96,6 +97,10 @@ def set_challenge_state(app, name: str, state: str) -> bool:
         if not challenge:
             return False
         challenge.state = state
+        if state == "visible":
+            challenge.scheduled_at = datetime.datetime.utcnow()
+        else:
+            challenge.scheduled_at = None
         db.session.commit()
         clear_challenges()
         return True

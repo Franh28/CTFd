@@ -1,68 +1,319 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="jumbotron">
-    <div class="container">
-      <h1>
-        {% trans %}Scoreboard{% endtrans %}
-      </h1>
-    </div>
-  </div>
+<div class="jumbotron">
   <div class="container">
-    {% include "components/errors.html" %}
+    <h1>
+      {% trans %}Scoreboard{% endtrans %}
+    </h1>
+  </div>
+</div>
+<div class="container">
+  {% include "components/errors.html" %}
 
-    <div id="score-graph" class="align-items-center" :class="{'d-flex': show, 'd-none': !show}" x-data="ScoreboardDetail" x-ref="scoregraph" @bracket-change.window="activeBracket=$event.detail; update();">
-      <div class="col-md-12 text-center">
-        <i class="fas fa-circle-notch fa-spin fa-3x fa-fw spinner"></i>
+  <div class="card bg-dark border-secondary mb-4 shadow-sm" id="ctf-scoreboard-timers-card">
+    <div class="card-body py-3">
+      <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+        <h5 class="card-title mb-0 text-light">
+          <i class="fa-solid fa-stopwatch me-2 text-info"></i>Cronómetro Individual por Reto (20:00 min)
+        </h5>
+        <small class="text-muted">Sincronizado en tiempo real con el servidor</small>
+      </div>
+      <div class="row g-2" id="ctf-scoreboard-timers-grid">
+        <div class="col-12 text-muted small">Cargando estado de los retos desde el servidor...</div>
       </div>
     </div>
+  </div>
 
-    <div id="scoreboard" class="row" x-data="ScoreboardList">
-      <template x-if="brackets.length && standings.length">
-        <div class="col-md-12 py-3">
-          <nav class="nav nav-pills nav-fill">
-            <button :class="{'nav-link': true, 'active': !activeBracket}" @click="activeBracket=null">{% trans %}All{% endtrans %}</button>
-            <template x-for="bracket in brackets">
-              <button :class="{'nav-link': true, 'active': activeBracket == bracket.id}" x-text="bracket.name" @click="activeBracket=bracket.id"></button>
-            </template>
-          </nav>
-        </div>
-      </template>
+  <div id="score-graph" class="align-items-center" :class="{'d-flex': show, 'd-none': !show}" x-data="ScoreboardDetail"
+    x-ref="scoregraph" @bracket-change.window="activeBracket=$event.detail; update();">
+    <div class="col-md-12 text-center">
+      <i class="fas fa-circle-notch fa-spin fa-3x fa-fw spinner"></i>
+    </div>
+  </div>
 
-      <div class="col-md-12" x-show="standings.length">
-        <table class="table table-striped align-middle">
-          <thead>
+  <div id="scoreboard" class="row" x-data="ScoreboardList">
+    <template x-if="brackets.length && standings.length">
+      <div class="col-md-12 py-3">
+        <nav class="nav nav-pills nav-fill">
+          <button :class="{'nav-link': true, 'active': !activeBracket}" @click="activeBracket=null">{% trans %}All{%
+            endtrans %}</button>
+          <template x-for="bracket in brackets">
+            <button :class="{'nav-link': true, 'active': activeBracket == bracket.id}" x-text="bracket.name"
+              @click="activeBracket=bracket.id"></button>
+          </template>
+        </nav>
+      </div>
+    </template>
+
+    <div class="col-md-12" x-show="standings.length">
+      <table class="table table-striped align-middle">
+        <thead>
           <tr>
             <th style="width: 10px">{% trans %}Place{% endtrans %}</th>
             <th class="text-start ps-3">{{ get_mode_as_word(capitalize=True) }}</th>
             <th>{% trans %}Score{% endtrans %}</th>
           </tr>
-          </thead>
+        </thead>
 
-          <tbody>
-            <template x-for="(standing, index) in standings.filter(i => activeBracket ? i.bracket_id==activeBracket : true)">
-              <tr>
-                <th scope="row" class="text-center" x-text="index + 1"></th>
-                <td class="text-start">
-                  <a :href="standing.account_url" x-text="standing.name"></a>
-                  <template x-if="standing.bracket_name">
-                    <span class="badge bg-secondary ms-2" x-text="standing.bracket_name"></span>
-                  </template>
-                </td>
-                <td x-text="standing.score"></td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+        <tbody>
+          <template
+            x-for="(standing, index) in standings.filter(i => activeBracket ? i.bracket_id==activeBracket : true)">
+            <tr>
+              <th scope="row" class="text-center" x-text="index + 1"></th>
+              <td class="text-start">
+                <a :href="standing.account_url" x-text="standing.name"></a>
+                <template x-if="standing.bracket_name">
+                  <span class="badge bg-secondary ms-2" x-text="standing.bracket_name"></span>
+                </template>
+              </td>
+              <td x-text="standing.score"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
 
-      <div class="col-md-12" x-show="! standings.length">
-        <h3 class="text-center text-muted">{% trans %}Scoreboard is empty{% endtrans %}</h3>
-      </div>
+    <div class="col-md-12" x-show="! standings.length">
+      <h3 class="text-center text-muted">{% trans %}Scoreboard is empty{% endtrans %}</h3>
     </div>
   </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-  {{ Assets.js("assets/js/scoreboard.js") }}
+{{ Assets.js("assets/js/scoreboard.js") }}
+<script>
+  (function () {
+    const DURATION_SEC = 1200;
+    const IS_ADMIN = {{ 'true' if (User and User.type == 'admin') else 'false'
+  }};
+  let serverNowBootSec = {{ utcnow() | unix_time }};
+  let clientBootMs = Date.now();
+  let challengesList = [];
+
+  function getServerNowMs() {
+    return Date.now() + ((serverNowBootSec * 1000) - clientBootMs);
+  }
+
+  function formatMMSS(sec) {
+    if (sec === null || sec === undefined) return "20:00";
+    const s = Math.max(0, Math.floor(Number(sec)));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+  }
+
+  function parseUtcIsoMs(isoStr) {
+    if (!isoStr || typeof isoStr !== "string") return null;
+    let normalized = isoStr.trim();
+    if (!normalized.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(normalized)) {
+      normalized += "Z";
+    }
+    const ms = Date.parse(normalized);
+    if (Number.isNaN(ms) || ms < 1000000000000) return null;
+    return ms;
+  }
+
+  function buildItem(id, name, value, active, remSec) {
+    if (!active || remSec === null || remSec === undefined || Number.isNaN(Number(remSec))) {
+      return { id: id, name: name, value: value, active: false, endAtClientMs: null };
+    }
+    const clamped = Math.max(0, Math.min(DURATION_SEC, Math.round(Number(remSec))));
+    return {
+      id: id,
+      name: name,
+      value: value,
+      active: true,
+      endAtClientMs: Date.now() + (clamped * 1000)
+    };
+  }
+
+  function buildItemFromScheduledAt(id, name, value, scheduledAtIso) {
+    const startMs = parseUtcIsoMs(scheduledAtIso);
+    if (startMs === null) {
+      return { id: id, name: name, value: value, active: false, endAtClientMs: null };
+    }
+    const remSec = Math.max(0, Math.min(DURATION_SEC, Math.round(((startMs + (DURATION_SEC * 1000)) - getServerNowMs()) / 1000)));
+    return {
+      id: id,
+      name: name,
+      value: value,
+      active: true,
+      endAtClientMs: Date.now() + (remSec * 1000)
+    };
+  }
+
+  function syncClockFromHeader(res) {
+    try {
+      const hdr = res && res.headers ? res.headers.get("Date") : null;
+      if (hdr) {
+        const parsed = Date.parse(hdr);
+        if (!Number.isNaN(parsed) && parsed > 1000000000000) {
+          serverNowBootSec = Math.floor(parsed / 1000);
+          clientBootMs = Date.now();
+        }
+      }
+    } catch (e) { }
+  }
+
+  async function fetchScoreboardTimers() {
+    const root = (window.init && window.init.urlRoot) ? window.init.urlRoot : "";
+    try {
+      const res = await fetch(root + "/api/v1/challenges/timers", {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      if (res.ok) {
+        syncClockFromHeader(res);
+        const json = await res.json();
+        if (json && Array.isArray(json.data)) {
+          challengesList = json.data.map(c => {
+            if (c.timer_active !== undefined && c.remaining_seconds !== undefined) {
+              return buildItem(c.id, c.name, c.value, Boolean(c.timer_active), c.remaining_seconds);
+            }
+            return buildItemFromScheduledAt(c.id, c.name, c.value, c.scheduled_at);
+          });
+          renderScoreboardTimers();
+          return;
+        }
+      }
+    } catch (err) { }
+
+    try {
+      const listRes = await fetch(root + "/api/v1/challenges", {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      if (!listRes.ok) return;
+      syncClockFromHeader(listRes);
+      const listJson = await listRes.json();
+      if (!listJson || !Array.isArray(listJson.data)) return;
+
+      const items = await Promise.all(
+        listJson.data.map(async (c) => {
+          if (c.timer_active !== undefined && c.remaining_seconds !== undefined) {
+            return buildItem(c.id, c.name, c.value, Boolean(c.timer_active), c.remaining_seconds);
+          }
+          try {
+            const dRes = await fetch(root + "/api/v1/challenges/" + c.id, {
+              credentials: "same-origin",
+              cache: "no-store"
+            });
+            if (dRes.ok) {
+              syncClockFromHeader(dRes);
+              const dJson = await dRes.json();
+              if (dJson && dJson.data) {
+                const d = dJson.data;
+                if (d.timer && d.timer.active !== undefined) {
+                  return buildItem(d.id, d.name, d.value, Boolean(d.timer.active), d.timer.remaining_seconds);
+                }
+                return buildItemFromScheduledAt(d.id, d.name, d.value, d.scheduled_at);
+              }
+            }
+          } catch (e) { }
+          return buildItem(c.id, c.name, c.value, false, null);
+        })
+      );
+      challengesList = items;
+      renderScoreboardTimers();
+    } catch (e) { }
+  }
+
+  window.ctfScoreboardAdminTimer = async function (challengeId, startNow) {
+    const root = (window.init && window.init.urlRoot) ? window.init.urlRoot : "";
+    const csrf = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : "";
+    try {
+      const probe = await fetch(root + "/api/v1/challenges/" + challengeId, {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      syncClockFromHeader(probe);
+    } catch (e) { }
+    const safeServerIso = new Date(getServerNowMs() - 2000).toISOString();
+    const payload = startNow
+        ? { state: "visible", scheduled_at: safeServerIso }
+        : { scheduled_at: null };
+    try {
+        const res = await fetch(root + "/api/v1/challenges/" + challengeId, {
+          method: "PATCH",
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "CSRF-Token": csrf
+          },
+          body: JSON.stringify(payload)
+        });
+        syncClockFromHeader(res);
+          await fetchScoreboardTimers();
+      } catch (e) { }
+    };
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderScoreboardTimers() {
+      const grid = document.getElementById("ctf-scoreboard-timers-grid");
+      if (!grid) return;
+      if (!challengesList.length) {
+        grid.innerHTML = '<div class="col-12 text-muted small">No hay retos visibles en este momento.</div>';
+        return;
+      }
+      const nowMs = Date.now();
+      grid.innerHTML = challengesList.map(item => {
+        const rem = (item.active && item.endAtClientMs !== null)
+          ? Math.max(0, Math.round((item.endAtClientMs - nowMs) / 1000))
+          : null;
+        const expired = item.active && rem !== null && rem <= 0;
+        const isWarn = item.active && rem !== null && rem > 0 && rem <= 300;
+
+        const boxClass = !item.active
+          ? "border-secondary text-muted"
+          : (expired
+            ? "border-danger bg-danger bg-opacity-10 text-danger"
+            : (isWarn ? "border-warning bg-warning bg-opacity-10 text-warning" : "border-success bg-success bg-opacity-10 text-light"));
+
+        const badgeClass = !item.active
+          ? "bg-secondary"
+          : (expired ? "bg-danger" : (isWarn ? "bg-warning text-dark" : "bg-success"));
+
+        const badgeText = !item.active
+          ? "⏸️ 20:00"
+          : (expired ? "🔒 00:00" : ("⏱️ " + formatMMSS(rem)));
+
+        const adminControls = IS_ADMIN
+          ? `<div class="mt-2 pt-1 border-top border-secondary d-flex gap-1 justify-content-end">
+                 <button type="button" class="btn btn-xs btn-sm btn-outline-success py-0 px-2" onclick="window.ctfScoreboardAdminTimer(${item.id}, true)" title="Iniciar o reiniciar 20:00 solo para este reto">▶️ 20m</button>
+                 ${item.active ? `<button type="button" class="btn btn-xs btn-sm btn-outline-danger py-0 px-2" onclick="window.ctfScoreboardAdminTimer(${item.id}, false)" title="Parar contador de este reto">⏹️</button>` : ""}
+               </div>`
+          : "";
+
+        return `
+            <div class="col-12 col-md-4">
+              <div class="p-2 rounded border ${boxClass}">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="text-truncate me-2">
+                    <strong>${escapeHtml(item.name)}</strong>
+                    <small class="d-block text-muted">${Number(item.value)} pts</small>
+                  </div>
+                  <span class="badge fs-6 font-monospace ${badgeClass}">${badgeText}</span>
+                </div>
+                ${adminControls}
+              </div>
+            </div>
+          `;
+      }).join("");
+    }
+
+    fetchScoreboardTimers();
+    setInterval(renderScoreboardTimers, 1000);
+    setInterval(fetchScoreboardTimers, 3000);
+  }) ();
+</script>
 {% endblock %}

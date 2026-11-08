@@ -1,75 +1,423 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="jumbotron">
-    <div class="container">
-      <h1>
-        {% trans %}Challenges{% endtrans %}
-      </h1>
+<div class="jumbotron">
+  <div class="container">
+    <h1>
+      {% trans %}Challenges{% endtrans %}
+    </h1>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      {% include "components/errors.html" %}
     </div>
   </div>
 
-  <div class="container">
-    <div class="row">
-      <div class="col-md-12">
-        {% include "components/errors.html" %}
-      </div>
-    </div>
+  <div x-data="ChallengeBoard" @load-challenges.window="loadChallenges()"
+    @load-challenge.window="loadChallenge($event.detail)">
+    <div x-ref="challengeWindow" id="challenge-window" class="modal fade" tabindex="-1" role="dialog" x-data=""
+      x-html="$store.challenge.data.view"></div>
 
-    <div 
-      x-data="ChallengeBoard" 
-      @load-challenges.window="loadChallenges()" 
-      @load-challenge.window="loadChallenge($event.detail)"
-    >
-      <div
-          x-ref="challengeWindow" id="challenge-window" class="modal fade" tabindex="-1" role="dialog" x-data=""
-          x-html="$store.challenge.data.view"
-      ></div>
-
-      <div x-show="!loaded">
-        <div class="min-vh-50 d-flex align-items-center">
-          <div class="text-center w-100">
-            <i class="fas fa-circle-notch fa-spin fa-3x fa-fw spinner"></i>
-          </div>
+    <div x-show="!loaded">
+      <div class="min-vh-50 d-flex align-items-center">
+        <div class="text-center w-100">
+          <i class="fas fa-circle-notch fa-spin fa-3x fa-fw spinner"></i>
         </div>
       </div>
+    </div>
 
-      <div x-show="loaded">
-        <template x-for="(category, idx) in getCategories()" :key="idx">
-          <div class="pt-5">
-            <div class="category-header mb-3">
-              <h3 x-text="category"></h3>
-            </div>
+    <div x-show="loaded">
+      <template x-for="(category, idx) in getCategories()" :key="idx">
+        <div class="pt-5">
+          <div class="category-header mb-3">
+            <h3 x-text="category"></h3>
+          </div>
 
-            <div class="category-challenges d-flex flex-column">
-              <div class="challenges-row row">
-                <template x-for="(c, idx) in getChallenges(category)" :key="c.id">
-                  <div class="col-sm-6 col-md-4 col-lg-3 my-3">
-                    <button
-                        class="challenge-button btn btn-dark w-100 h-100"
-                        :class="[
+          <div class="category-challenges d-flex flex-column">
+            <div class="challenges-row row">
+              <template x-for="(c, idx) in getChallenges(category)" :key="c.id">
+                <div class="col-sm-6 col-md-4 col-lg-3 my-3">
+                  <button class="challenge-button btn btn-dark w-100 h-100" :class="[
                           c.solved_by_me ? 'challenge-solved' : '',
                           ...c.tags.map((tag) => `tag-${tag.value.replace(/ /g, '-')}`),
-                        ];"
-                        :value="c.id" @click="loadChallenge(c.id)"
-                    >
+                        ];" :value="c.id" @click="loadChallenge(c.id)">
 
-                      <div class="challenge-inner my-3">
-                        <p x-text="c.name"></p>
-                        <span x-text="c.value"></span>
+                    <div class="challenge-inner my-3">
+                      <p x-text="c.name"></p>
+                      <span x-text="c.value"></span>
+                      <div class="mt-2">
+                        <span class="badge font-monospace bg-secondary opacity-75 ctf-card-timer-badge"
+                          :data-chal-id="c.id">⏸️ 20:00 (Sin iniciar)</span>
                       </div>
-                    </button>
-                  </div>
-                </template>
-              </div>
+                    </div>
+                  </button>
+                </div>
+              </template>
             </div>
           </div>
-        </template>
-      </div>
+        </div>
+      </template>
     </div>
   </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-  {{ Assets.js("assets/js/challenges.js") }}
+{{ Assets.js("assets/js/challenges.js") }}
+<script>
+  (function () {
+    const DURATION_SEC = 1200;
+    let serverNowBootSec = {{ utcnow() | unix_time
+  }};
+  let clientBootMs = Date.now();
+  const timerMap = {};
+
+  function getServerNowMs() {
+    return Date.now() + ((serverNowBootSec * 1000) - clientBootMs);
+  }
+
+  function formatMMSS(sec) {
+    if (sec === null || sec === undefined) return "20:00";
+    const s = Math.max(0, Math.floor(Number(sec)));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+  }
+
+  function parseUtcIsoMs(isoStr) {
+    if (!isoStr || typeof isoStr !== "string") return null;
+    let normalized = isoStr.trim();
+    if (!normalized.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(normalized)) {
+      normalized += "Z";
+    }
+    const ms = Date.parse(normalized);
+    if (Number.isNaN(ms) || ms < 1000000000000) return null;
+    return ms;
+  }
+
+  function updateEntryFromRemaining(chalId, active, remSec) {
+    const id = Number(chalId);
+    if (!active || remSec === null || remSec === undefined || Number.isNaN(Number(remSec))) {
+      timerMap[id] = { active: false, endAtClientMs: null, expired: false };
+      return;
+    }
+    const clamped = Math.max(0, Math.min(DURATION_SEC, Math.round(Number(remSec))));
+    timerMap[id] = {
+      active: true,
+      endAtClientMs: Date.now() + (clamped * 1000),
+      expired: clamped <= 0
+    };
+  }
+
+  function updateEntryFromScheduledAt(chalId, scheduledAtIso) {
+    const id = Number(chalId);
+    const startMs = parseUtcIsoMs(scheduledAtIso);
+    if (startMs === null) {
+      timerMap[id] = { active: false, endAtClientMs: null, expired: false };
+      return;
+    }
+    const remSec = Math.max(0, Math.min(DURATION_SEC, Math.round(((startMs + (DURATION_SEC * 1000)) - getServerNowMs()) / 1000)));
+    timerMap[id] = {
+      active: true,
+      endAtClientMs: Date.now() + (remSec * 1000),
+      expired: remSec <= 0
+    };
+  }
+
+  function getRemainingForId(chalId) {
+    const entry = timerMap[Number(chalId)];
+    if (!entry || !entry.active || entry.endAtClientMs === null) {
+      return { active: false, rem: null, expired: false };
+    }
+    const rem = Math.max(0, Math.round((entry.endAtClientMs - Date.now()) / 1000));
+    const expired = rem <= 0;
+    entry.expired = expired;
+    return { active: true, rem: rem, expired: expired };
+  }
+
+  function syncClockFromHeader(res) {
+    try {
+      const hdr = res && res.headers ? res.headers.get("Date") : null;
+      if (hdr) {
+        const parsed = Date.parse(hdr);
+        if (!Number.isNaN(parsed) && parsed > 1000000000000) {
+          serverNowBootSec = Math.floor(parsed / 1000);
+          clientBootMs = Date.now();
+        }
+      }
+    } catch (e) { }
+  }
+
+  async function syncAllTimersFromServer() {
+    const root = (window.init && window.init.urlRoot) ? window.init.urlRoot : "";
+    try {
+      const res = await fetch(root + "/api/v1/challenges/timers", {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      if (res.ok) {
+        syncClockFromHeader(res);
+        const json = await res.json();
+        if (json && Array.isArray(json.data)) {
+          json.data.forEach(item => {
+            if (item.timer_active !== undefined && item.remaining_seconds !== undefined) {
+              updateEntryFromRemaining(item.id, Boolean(item.timer_active), item.remaining_seconds);
+            } else {
+              updateEntryFromScheduledAt(item.id, item.scheduled_at);
+            }
+          });
+          tickUI();
+          return;
+        }
+      }
+    } catch (err) {
+      // Fallback below
+    }
+
+    try {
+          const idSet = new Set();
+        document.querySelectorAll(".ctf-card-timer-badge[data-chal-id]").forEach(el => {
+          const cid = Number(el.getAttribute("data-chal-id"));
+          if (cid > 0) idSet.add(cid);
+        });
+      const modalBox = document.getElementById("ctf-modal-timer-box");
+      if (modalBox) {
+        const mcid = Number(modalBox.getAttribute("data-challenge-id"));
+        if (mcid > 0) idSet.add(mcid);
+      }
+
+      try {
+        const listRes = await fetch(root + "/api/v1/challenges", {
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+        if (listRes.ok) {
+          syncClockFromHeader(listRes);
+          const listJson = await listRes.json();
+          if (listJson && Array.isArray(listJson.data)) {
+            listJson.data.forEach(c => {
+              if (c && c.id) idSet.add(Number(c.id));
+            });
+          }
+        }
+      } catch (e) { }
+
+      const ids = Array.from(idSet);
+      await Promise.all(
+          ids.map(async (cid) => {
+            try {
+                const detailRes = await fetch(root + "/api/v1/challenges/" + cid, {
+                  credentials: "same-origin",
+                  cache: "no-store"
+                });
+                if(!detailRes.ok) return;
+              syncClockFromHeader(detailRes);
+              const detailJson = await detailRes.json();
+              if (detailJson && detailJson.data) {
+                const d = detailJson.data;
+                if (d.timer && d.timer.active !== undefined) {
+                  updateEntryFromRemaining(d.id, Boolean(d.timer.active), d.timer.remaining_seconds);
+                } else {
+                  updateEntryFromScheduledAt(d.id, d.scheduled_at);
+                }
+              }
+            } catch (e) { }
+          })
+          );
+      tickUI();
+    } catch (e) { }
+  }
+
+  function tickUI() {
+    // 1. Check if modal is open and initialize from its server-rendered attributes if newly opened
+    const modalBox = document.getElementById("ctf-modal-timer-box");
+    if (modalBox) {
+      const chalId = Number(modalBox.getAttribute("data-challenge-id"));
+      if (!modalBox.getAttribute("data-js-bound")) {
+        modalBox.setAttribute("data-js-bound", "1");
+        const srvNowAttr = Number(modalBox.getAttribute("data-server-now"));
+        if (srvNowAttr > 1000000000) {
+          serverNowBootSec = srvNowAttr;
+          clientBootMs = Date.now();
+        }
+        const isAct = modalBox.getAttribute("data-active") === "true";
+        const remAttr = modalBox.getAttribute("data-remaining");
+        if (isAct && remAttr !== "" && remAttr !== null) {
+          updateEntryFromRemaining(chalId, true, Number(remAttr));
+        } else if (!timerMap[chalId]) {
+          updateEntryFromRemaining(chalId, false, null);
+        }
+      }
+
+      const st = getRemainingForId(chalId);
+      const inactiveEl = document.getElementById("ctf-modal-timer-inactive");
+      const runningEl = document.getElementById("ctf-modal-timer-running");
+      const expiredEl = document.getElementById("ctf-modal-timer-expired");
+      const displayEl = document.getElementById("ctf-modal-timer-display");
+      const barEl = document.getElementById("ctf-modal-timer-bar");
+      const stopBtn = document.getElementById("ctf-modal-timer-stop-btn");
+      const inputEl = document.getElementById("challenge-input");
+      const submitBtn = document.getElementById("challenge-submit");
+      const submitLbl = document.getElementById("ctf-modal-submit-label");
+
+      if (!st.active) {
+        modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-dark border-secondary text-muted";
+        if (inactiveEl) inactiveEl.style.display = "";
+        if (runningEl) runningEl.style.display = "none";
+        if (expiredEl) expiredEl.style.display = "none";
+        if (stopBtn) stopBtn.style.display = "none";
+        if (inputEl) {
+          inputEl.disabled = false;
+          if (inputEl.placeholder.indexOf("Tiempo agotado") !== -1) inputEl.placeholder = "Flag";
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("btn-danger", "disabled");
+          submitBtn.classList.add("btn-outline-secondary");
+        }
+        if (submitLbl && submitLbl.textContent.indexOf("Cerrado") !== -1) {
+          submitLbl.textContent = "Enviar";
+        }
+      } else if (st.expired) {
+        modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-danger bg-opacity-10 border-danger text-danger";
+        if (inactiveEl) inactiveEl.style.display = "none";
+        if (runningEl) runningEl.style.display = "none";
+        if (expiredEl) expiredEl.style.display = "";
+        if (stopBtn) stopBtn.style.display = "";
+        if (inputEl) {
+          inputEl.disabled = true;
+          inputEl.placeholder = "🔒 Tiempo agotado (20:00) - Envío cerrado";
+        }
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.remove("btn-outline-secondary");
+          submitBtn.classList.add("btn-danger", "disabled");
+        }
+        if (submitLbl) {
+          submitLbl.textContent = "🔒 Cerrado (00:00)";
+        }
+      } else {
+        const isWarn = st.rem <= 300;
+        modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border " +
+          (isWarn ? "bg-warning bg-opacity-10 border-warning text-warning" : "bg-dark border-success text-light");
+        if (inactiveEl) inactiveEl.style.display = "none";
+        if (runningEl) runningEl.style.display = "";
+        if (expiredEl) expiredEl.style.display = "none";
+        if (stopBtn) stopBtn.style.display = "";
+        if (displayEl) {
+          displayEl.textContent = formatMMSS(st.rem);
+          displayEl.className = "badge fs-6 font-monospace " + (isWarn ? "bg-warning text-dark" : "bg-success");
+        }
+        if (barEl) {
+          const pct = Math.max(0, Math.min(100, (st.rem / DURATION_SEC) * 100)).toFixed(1);
+          barEl.style.width = pct + "%";
+          barEl.className = "progress-bar progress-bar-striped progress-bar-animated " + (isWarn ? "bg-warning" : "bg-success");
+        }
+        if (inputEl) {
+          inputEl.disabled = false;
+          if (inputEl.placeholder.indexOf("Tiempo agotado") !== -1) inputEl.placeholder = "Flag";
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("btn-danger", "disabled");
+          submitBtn.classList.add("btn-outline-secondary");
+        }
+        if (submitLbl && submitLbl.textContent.indexOf("Cerrado") !== -1) {
+          submitLbl.textContent = "Enviar";
+        }
+      }
+    }
+
+    // 2. Update all card badges on /challenges board
+    const badges = document.querySelectorAll(".ctf-card-timer-badge[data-chal-id]");
+    badges.forEach(badge => {
+      const cid = Number(badge.getAttribute("data-chal-id"));
+      const st = getRemainingForId(cid);
+      if (!st.active) {
+        badge.className = "badge font-monospace bg-secondary opacity-75 ctf-card-timer-badge";
+        badge.textContent = "⏸️ 20:00 (Sin iniciar)";
+      } else if (st.expired) {
+        badge.className = "badge font-monospace bg-danger ctf-card-timer-badge";
+        badge.textContent = "🔒 00:00 (Cerrado)";
+      } else {
+        const isWarn = st.rem <= 300;
+        badge.className = "badge font-monospace ctf-card-timer-badge " + (isWarn ? "bg-warning text-dark" : "bg-success");
+        badge.textContent = "⏱️ " + formatMMSS(st.rem);
+      }
+    });
+  }
+
+  window.ctfAdminControlTimer = async function (challengeId, startNow) {
+    const root = (window.init && window.init.urlRoot) ? window.init.urlRoot : "";
+    const csrf = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : "";
+    try {
+      const probe = await fetch(root + "/api/v1/challenges/" + challengeId, {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      syncClockFromHeader(probe);
+    } catch (e) { }
+
+    // Subtract 2000ms from server UTC clock so scheduled_at <= datetime.utcnow() is ALWAYS true on the server
+    const safeServerIso = new Date(getServerNowMs() - 2000).toISOString();
+    const payload = startNow
+        ? { state: "visible", scheduled_at: safeServerIso }
+        : { scheduled_at: null };
+
+    try {
+      const res = await fetch(root + "/api/v1/challenges/" + challengeId, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "CSRF-Token": csrf
+        },
+        body: JSON.stringify(payload)
+      });
+      syncClockFromHeader(res);
+      if (res.ok) {
+        await syncAllTimersFromServer();
+      }
+    } catch (err) {
+      console.error("Error updating challenge timer:", err);
+    }
+  };
+
+  // Guard flag submission in capture phase if timer is expired
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest ? e.target.closest("#challenge-submit") : null;
+    if (!btn) return;
+    const idEl = document.getElementById("challenge-id");
+    if (!idEl) return;
+    const st = getRemainingForId(Number(idEl.value));
+    if (st.active && st.expired) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    const inp = e.target.closest ? e.target.closest("#challenge-input") : null;
+    if (!inp) return;
+    const idEl = document.getElementById("challenge-id");
+    if (!idEl) return;
+    const st = getRemainingForId(Number(idEl.value));
+    if (st.active && st.expired) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  syncAllTimersFromServer();
+  setInterval(tickUI, 500);
+  setInterval(syncAllTimersFromServer, 3000);
+    }) ();
+</script>
 {% endblock %}

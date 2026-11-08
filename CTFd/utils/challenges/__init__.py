@@ -24,6 +24,8 @@ ChallengeFields = [
     "requirements",
     "position",
     "module_id",
+    "scheduled_at",
+    "state",
 ]
 Challenge = namedtuple(
     "Challenge",
@@ -33,6 +35,53 @@ Challenge = namedtuple(
 
 Rating = namedtuple("Rating", ["up", "down", "count"])
 
+CHALLENGE_TIME_LIMIT_SECONDS = 20 * 60  # 20 minutos por reto
+
+
+def get_challenge_timer_info(challenge, now=None):
+    """
+    Calcula el estado del contador individual de 20 minutos para un reto
+    a partir de su fecha de activación en servidor (`scheduled_at`).
+    """
+    if now is None:
+        now = datetime.datetime.utcnow()
+    scheduled_at = getattr(challenge, "scheduled_at", None)
+    state = getattr(challenge, "state", "visible")
+    if state != "visible" or scheduled_at is None or scheduled_at.year < 2020:
+        return {
+            "duration": CHALLENGE_TIME_LIMIT_SECONDS,
+            "started_at": None,
+            "expires_at": None,
+            "remaining_seconds": None,
+            "expired": False,
+            "active": False,
+        }
+    if scheduled_at > now:
+        return {
+            "duration": CHALLENGE_TIME_LIMIT_SECONDS,
+            "started_at": scheduled_at.isoformat() + "Z",
+            "expires_at": (
+                scheduled_at + datetime.timedelta(seconds=CHALLENGE_TIME_LIMIT_SECONDS)
+            ).isoformat()
+            + "Z",
+            "remaining_seconds": CHALLENGE_TIME_LIMIT_SECONDS,
+            "expired": False,
+            "active": True,
+        }
+    elapsed = (now - scheduled_at).total_seconds()
+    remaining = max(0, int(CHALLENGE_TIME_LIMIT_SECONDS - elapsed))
+    expires_at = scheduled_at + datetime.timedelta(
+        seconds=CHALLENGE_TIME_LIMIT_SECONDS
+    )
+    return {
+        "duration": CHALLENGE_TIME_LIMIT_SECONDS,
+        "started_at": scheduled_at.isoformat() + "Z",
+        "expires_at": expires_at.isoformat() + "Z",
+        "remaining_seconds": remaining,
+        "expired": remaining <= 0,
+        "active": True,
+    }
+
 
 @cache.memoize(timeout=60)
 def get_all_challenges(admin=False, field=None, q=None, **query_args):
@@ -41,11 +90,7 @@ def get_all_challenges(admin=False, field=None, q=None, **query_args):
     # Admins can see hidden and locked challenges in the admin view
     if admin is False:
         chal_q = chal_q.filter(
-            and_(Challenges.state != "hidden", Challenges.state != "locked"),
-            or_(
-                Challenges.scheduled_at.is_(None),
-                Challenges.scheduled_at <= datetime.datetime.utcnow(),
-            ),
+            and_(Challenges.state != "hidden", Challenges.state != "locked")
         )
     chal_q = (
         chal_q.filter_by(**query_args)
@@ -73,6 +118,8 @@ def get_all_challenges(admin=False, field=None, q=None, **query_args):
             requirements=c.requirements,
             position=c.position,
             module_id=c.module_id,
+            scheduled_at=c.scheduled_at,
+            state=c.state,
         )
         results.append(ct)
     return results
