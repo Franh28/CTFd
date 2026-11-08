@@ -8,6 +8,14 @@
     "sql_challenge": {
       "enabled": true,
       "state": "visible"
+    },
+    "business_challenge": {
+      "enabled": true,
+      "state": "visible"
+    },
+    "xss_challenge": {
+      "enabled": true,
+      "state": "visible"
     }
   }
 }
