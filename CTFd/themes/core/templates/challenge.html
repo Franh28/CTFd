@@ -1,413 +1,720 @@
-<div :class="getStyles()" role="document" x-data="Challenge"
-  x-init='id = {{ challenge.id }}; max_attempts = {{ max_attempts }}; attempts = {{ attempts }}; ratingValue = {{ (rating.get('
-  value') if rating else None) | tojson }}; ratingReview={{ (rating.get('review', '' ) if rating else None) | tojson
-  }};'>
-  <div class="modal-content">
-    <div class="modal-body py-4 px-4 px-sm-5">
+  <div :class="getStyles()" role="document" x-data="Challenge"
+    x-init="id = {{ challenge.id }}; max_attempts = {{ max_attempts }}; attempts = {{ attempts }}; ratingValue = {{ (rating.get('value') if rating else None) | tojson }}; ratingReview = {{ (rating.get('review', '') if rating else None) | tojson }};">
+    <div class="modal-content">
+      <div class="modal-body py-4 px-4 px-sm-5">
 
-      <div>
-        <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div>
+          <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button>
 
-        <ul class="nav nav-tabs">
-          <li class="nav-item">
-            <button class="nav-link active" data-bs-target="#challenge" @click="showChallenge()">
-              {% trans %}Challenge{% endtrans %}
-            </button>
-          </li>
+          <ul class="nav nav-tabs">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-target="#challenge" @click="showChallenge()">
+                {% trans %}Challenge{% endtrans %}
+              </button>
+            </li>
 
-          {% block submissions %}
-          {% if Configs.view_self_submissions %}
-          <li class="nav-item">
-            <button class="nav-link challenge-submissions" data-bs-target="#submissions" @click="showSubmissions()">
-              {% if solves != None %}
-              Submissions
-              {% endif %}
-            </button>
-          </li>
-          {% endif %}
-          {% endblock %}
+            {% block submissions %}
+            {% if Configs.view_self_submissions %}
+            <li class="nav-item">
+              <button class="nav-link challenge-submissions" data-bs-target="#submissions" @click="showSubmissions()">
+                {% if solves != None %}
+                Submissions
+                {% endif %}
+              </button>
+            </li>
+            {% endif %}
+            {% if Configs.view_self_submissions %}
+            <li class="nav-item">
+              <button class="nav-link challenge-submissions" data-bs-target="#submissions" @click="showSubmissions()">
+                {% if solves != None %}
+                Submissions
+                {% endif %}
+              </button>
+            </li>
+            {% endif %}
+            {% endblock %}
 
-          {% block solution %}
-          <li class="nav-item" x-show="getSolutionId()">
-            <button class="nav-link challenge-solution" data-bs-target="#solution" @click="showSolution()">
-              {% trans %}Solution{% endtrans %}
-            </button>
-          </li>
-          {% endblock %}
+            {% block solution %}
+            <li class="nav-item" x-show="getSolutionId()">
+              <button class="nav-link challenge-solution" data-bs-target="#solution" @click="showSolution()">
+                {% trans %}Solution{% endtrans %}
+              </button>
+            </li>
+            <li class="nav-item" x-show="getSolutionId()">
+              <button class="nav-link challenge-solution" data-bs-target="#solution" @click="showSolution()">
+                {% trans %}Solution{% endtrans %}
+              </button>
+            </li>
+            {% endblock %}
 
-          {% block solves %}
-          {% if solves != None %}
-          <li class="nav-item">
-            <button class="nav-link challenge-solves" data-bs-target="#solves" @click="showSolves()">
-              {{ ngettext("%(num)d Solve", "%(num)d Solves", solves) }}
-            </button>
-          </li>
-          {% endif %}
-          {% endblock %}
-        </ul>
-      </div>
+            {% block solves %}
+            {% if solves != None %}
+            <li class="nav-item">
+              <button class="nav-link challenge-solves" data-bs-target="#solves" @click="showSolves()">
+                {{ ngettext("%(num)d Solve", "%(num)d Solves", solves) }}
+              </button>
+            </li>
+            {% endif %}
+            {% if solves != None %}
+            <li class="nav-item">
+              <button class="nav-link challenge-solves" data-bs-target="#solves" @click="showSolves()">
+                {{ ngettext("%(num)d Solve", "%(num)d Solves", solves) }}
+              </button>
+            </li>
+            {% endif %}
+            {% endblock %}
+          </ul>
+        </div>
 
-      <div>
-        <div class="tab-content">
-            <h2 class="challenge-name text-center pt-3">
-              {{ challenge.name }}
-            </h2>
-            <h3 class="challenge-value text-center">
-              {{ challenge.value }}
-            </h3>
+        <div>
+          <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade show active" id="challenge">
+              <h2 class="challenge-name text-center pt-3">
+                {{ challenge.name }}
+              </h2>
+              <h3 class="challenge-value text-center">
+                {{ challenge.value }}
+              </h3>
 
-                {% set _srv_now = utcnow() | unix_time %}
-                {% set _srv_start_raw = (challenge.scheduled_at | unix_time) if challenge.scheduled_at else None %}
-                {% set _srv_start = _srv_start_raw if (_srv_start_raw is not none and _srv_start_raw > 1000000000) else
-                None %}
-                {% set _srv_rem = (1200 - (_srv_now - _srv_start)) if (_srv_start is not none) else None %}
-                {% set _srv_rem_clamped = (0 if _srv_rem < 0 else (1200 if _srv_rem> 1200 else _srv_rem)) if (_srv_rem
-                  is not none) else None %}
-                  {% set _srv_active = (_srv_start is not none) %}
-                  {% set _srv_expired = (_srv_rem is not none and _srv_rem <= 0) %} {% set _srv_mm=((_srv_rem_clamped //
-                    60) if (_srv_rem_clamped is not none) else 20) %} {% set _srv_ss=((_srv_rem_clamped % 60) if
-                    (_srv_rem_clamped is not none) else 0) %} {% set _srv_pct=(((_srv_rem_clamped / 1200.0) * 100.0) |
-                    round(1)) if (_srv_rem_clamped is not none) else 100 %} <div id="ctf-modal-timer-box"
-                    data-challenge-id="{{ challenge.id }}" data-server-now="{{ _srv_now }}"
-                    data-started-at="{{ _srv_start if _srv_start is not none else '' }}"
-                    data-remaining="{{ _srv_rem_clamped if _srv_rem_clamped is not none else '' }}"
-                    data-active="{{ 'true' if _srv_active else 'false' }}"
-                    data-expired="{{ 'true' if _srv_expired else 'false' }}"
-                    class="challenge-timer-container my-3 px-3 py-2 rounded text-center border {{ 'bg-dark border-secondary text-muted' if not _srv_active else ('bg-danger bg-opacity-10 border-danger text-danger' if _srv_expired else ('bg-warning bg-opacity-10 border-warning text-warning' if _srv_rem_clamped <= 300 else 'bg-dark border-success text-light')) }}">
-                    <div id="ctf-modal-timer-inactive" class="py-1"
-                      style="{{ '' if not _srv_active else 'display:none;' }}">
+              {% set _srv_now = utcnow() | unix_time %}
+              {% set _srv_start_raw = (challenge.scheduled_at | unix_time) if challenge.scheduled_at else None %}
+              {% set _srv_start = _srv_start_raw if (_srv_start_raw is not none and _srv_start_raw > 1000000000) else
+              None %}
+              {% set _srv_rem = (1200 - (_srv_now - _srv_start)) if (_srv_start is not none) else None %}
+              {% set _srv_rem_clamped = (0 if _srv_rem < 0 else (1200 if _srv_rem> 1200 else _srv_rem)) if (_srv_rem
+                is not none) else None %}
+                {% set _srv_active = (_srv_start is not none) %}
+                {% set _srv_expired = (_srv_rem is not none and _srv_rem <= 0) %} {% set _srv_mm=((_srv_rem_clamped //
+                  60) if (_srv_rem_clamped is not none) else 20) %} {% set _srv_ss=((_srv_rem_clamped % 60) if
+                  (_srv_rem_clamped is not none) else 0) %} {% set _srv_pct=(((_srv_rem_clamped / 1200.0) * 100.0) |
+                  round(1)) if (_srv_rem_clamped is not none) else 100 %} <div id="ctf-modal-timer-box"
+                  data-challenge-id="{{ challenge.id }}" data-server-now="{{ _srv_now }}"
+                  data-started-at="{{ _srv_start if _srv_start is not none else '' }}"
+                  data-remaining="{{ _srv_rem_clamped if _srv_rem_clamped is not none else '' }}"
+                  data-active="{{ 'true' if _srv_active else 'false' }}"
+                  data-expired="{{ 'true' if _srv_expired else 'false' }}"
+                  class="challenge-timer-container my-3 px-3 py-2 rounded text-center border {{ 'bg-dark border-secondary text-muted' if not _srv_active else ('bg-danger bg-opacity-10 border-danger text-danger' if _srv_expired else ('bg-warning bg-opacity-10 border-warning text-warning' if _srv_rem_clamped <= 300 else 'bg-dark border-success text-light')) }}">
+                  <div id="ctf-modal-timer-inactive" class="py-1"
+                    style="{{ '' if not _srv_active else 'display:none;' }}">
+                    <i class="fa-solid fa-hourglass-start me-1"></i>
+                    <span>Contador individual (20:00 min) pendiente de iniciar por el organizador.</span>
+                  </div>
+                  <div id="ctf-modal-timer-box" data-challenge-id="{{ challenge.id }}"
+                    data-server-now="{{ utcnow() | unix_time }}"
+                    data-started-at="{{ (challenge.scheduled_at | unix_time) if challenge.scheduled_at else '' }}"
+                    class="challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-dark border-secondary text-muted">
+                    <div id="ctf-modal-timer-inactive" class="py-1">
                       <i class="fa-solid fa-hourglass-start me-1"></i>
                       <span>Contador individual (20:00 min) pendiente de iniciar por el organizador.</span>
                     </div>
 
-                      <div id="ctf-modal-timer-running"
-                        style="{{ '' if (_srv_active and not _srv_expired) else 'display:none;' }}">
-                        <div class="d-flex justify-content-center align-items-center gap-2">
-                          <i class="fa-solid fa-stopwatch"></i>
-                          <span class="fw-bold">Tiempo restante del reto:</span>
-                          <span id="ctf-modal-timer-display"
-                            class="badge fs-6 font-monospace {{ 'bg-warning text-dark' if (_srv_rem_clamped is not none and _srv_rem_clamped <= 300) else 'bg-success' }}">{{
-                            "%02d:%02d" | format(_srv_mm, _srv_ss) }}</span>
-                        </div>
-                        <div class="progress mt-2" style="height: 6px;">
-                          </div>
-                          <div id="ctf-modal-timer-bar"
-                            class="progress-bar progress-bar-striped progress-bar-animated {{ 'bg-warning' if (_srv_rem_clamped is not none and _srv_rem_clamped <= 300) else 'bg-success' }}"
-                            role="progressbar" style="width: {{ _srv_pct }}%;"></div>
-                        </div>
+                    <div id="ctf-modal-timer-running"
+                      style="{{ '' if (_srv_active and not _srv_expired) else 'display:none;' }}">
+                      <div class="d-flex justify-content-center align-items-center gap-2">
+                        <i class="fa-solid fa-stopwatch"></i>
+                        <span class="fw-bold">Tiempo restante del reto:</span>
+                        <span id="ctf-modal-timer-display"
+                          class="badge fs-6 font-monospace {{ 'bg-warning text-dark' if (_srv_rem_clamped is not none and _srv_rem_clamped <= 300) else 'bg-success' }}">{{
+                          "%02d:%02d" | format(_srv_mm, _srv_ss) }}</span>
                       </div>
-
-                        <div id="ctf-modal-timer-expired" class="fw-bold py-1"
-                          style="{{ '' if (_srv_active and _srv_expired) else 'display:none;' }}">
-                          <i class="fa-solid fa-lock me-1"></i>
-                          ⏰ TIEMPO AGOTADO (00:00) — Este reto ha cerrado y ya no permite enviar la flag.
-                        </div>
-
-                        {% if User and User.type == "admin" %}
-                        <div
-                          class="mt-2 pt-2 border-top border-secondary d-flex justify-content-center gap-2 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-success"
-                              onclick="if (window.ctfAdminControlTimer) window.ctfAdminControlTimer({{ challenge.id }}, true);">
-                              ▶️ Iniciar / Reiniciar 20:00 (solo este reto)
-                            </button>
-                              <button type="button" id="ctf-modal-timer-stop-btn" class="btn btn-sm btn-outline-danger"
-                                style="{{ '' if _srv_active else 'display:none;' }}"
-                                onclick="if (window.ctfAdminControlTimer) window.ctfAdminControlTimer({{ challenge.id }}, false);">
-                                ⏹️ Parar contador
-                              </button>
-                        </div>
-                        {% endif %}
+                      <div class="progress mt-2" style="height: 6px;">
                       </div>
+                      <div id="ctf-modal-timer-bar"
+                        class="progress-bar progress-bar-striped progress-bar-animated {{ 'bg-warning' if (_srv_rem_clamped is not none and _srv_rem_clamped <= 300) else 'bg-success' }}"
+                        role="progressbar" style="width: {{ _srv_pct }}%;"></div>
+                    </div>
+                  </div>
+                  <div id="ctf-modal-timer-running" style="display:none;">
+                    <div class="d-flex justify-content-center align-items-center gap-2">
+                      <i class="fa-solid fa-stopwatch"></i>
+                      <span class="fw-bold">Tiempo restante del reto:</span>
+                      <span id="ctf-modal-timer-display" class="badge fs-6 font-monospace bg-success">20:00</span>
+                    </div>
+                    <div class="mt-2"
+                      style="height: 8px; background: rgba(255, 255, 255, 0.14); border-radius: 999px; overflow: hidden;">
+                      <div id="ctf-modal-timer-bar"
+                        class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
+                        style="width: 100%; height: 100%; background-color: #198754; transition: width 0.4s linear;">
+                        &nbsp;</div>
+                    </div>
+                  </div>
 
+                  <div id="ctf-modal-timer-expired" class="fw-bold py-1"
+                    style="{{ '' if (_srv_active and _srv_expired) else 'display:none;' }}">
+                    <i class="fa-solid fa-lock me-1"></i>
+                    ⏰ TIEMPO AGOTADO (00:00) — Este reto ha cerrado y ya no permite enviar la flag.
+                  </div>
+                  <div id="ctf-modal-timer-expired" class="fw-bold py-1" style="display:none;">
+                    <i class="fa-solid fa-lock me-1"></i>
+                    <span>⏰ TIEMPO AGOTADO (00:00) — Este reto ha cerrado y ya no permite enviar la flag.</span>
+                  </div>
 
-                      {% if tags %}
-                      <div class="challenge-tags text-center pt-2 pb-3">
-                        {% block tags %}
-                        {% for tag in tags %}
-                        <span class="challenge-tag badge bg-info">{{ tag }}</span>
-                        {% endfor %}
-                        {% endblock %}
-                      </div>
-                      {% endif %}
+                  {% if User and User.type == "admin" %}
+                  <div class="mt-2 pt-2 border-top border-secondary d-flex justify-content-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-success"
+                      onclick="if (window.ctfAdminControlTimer) window.ctfAdminControlTimer({{ challenge.id }}, true);">
+                      ▶️ Iniciar / Reiniciar 20:00 (solo este reto)
+                    </button>
+                    <button type="button" id="ctf-modal-timer-stop-btn" class="btn btn-sm btn-outline-danger"
+                      style="{{ '' if _srv_active else 'display:none;' }}"
+                      onclick="if (window.ctfAdminControlTimer) window.ctfAdminControlTimer({{ challenge.id }}, false);">
+                      ⏹️ Parar contador
+                    </button>
+                  </div>
+                  {% endif %}
+            </div>
+            {% if User and User.type == "admin" %}
+            <div class="mt-2 pt-2 border-top border-secondary d-flex justify-content-center gap-2 flex-wrap">
+              <button type="button" class="btn btn-sm btn-success"
+                onclick="if (window.ctfAdminControlTimer) window.ctfAdminControlTimer({{ challenge.id }}, true);">
+                ▶️ Iniciar / Reiniciar 20:00 (solo este reto)
+              </button>
+              <button type="button" id="ctf-modal-timer-stop-btn" class="btn btn-sm btn-outline-danger"
+                style="display:none;"
+                onclick="if (window.ctfAdminControlTimer) window.ctfAdminControlTimer({{ challenge.id }}, false);">
+                ⏹️ Parar contador
+              </button>
+            </div>
+            {% endif %}
+          </div>
 
-                      <small class="challenge-attribution text-center text-muted">
-                        {% block attribution %}{{ challenge.byline }}{% endblock %}
-                      </small>
+          {% if tags %}
+          <div class="challenge-tags text-center pt-2 pb-3">
+            {% block tags %}
+            {% for tag in tags %}
+            <span class="challenge-tag badge bg-info">{{ tag }}</span>
+            {% endfor %}
+            {% endblock %}
+          </div>
+          {% endif %}
 
-                      {% if Configs.challenge_ratings == "public" %}
-                      <small class="challenge-ratings text-center text-muted d-block">
-                        {% block ratings %}
-                        {% if ratings %}
-                        <span><i class="fa-solid fa-thumbs-up"></i> {{ ratings.up }}</span>
-                        <span class="text-center px-2">
-                          {% if ratings.count %}
-                          ({{ ((ratings.up / (ratings.count)) * 100) | int }}% liked)
-                          {% endif %}
-                        </span>
-                        <span><i class="fa-solid fa-thumbs-down"></i> {{ ratings.down }}</span>
-                        {% endif %}
-                        {% endblock %}
-                      </small>
-                      {% endif %}
+          {% if tags %}
+          <div class="challenge-tags text-center pt-2 pb-3">
+            {% block tags %}
+            {% for tag in tags %}
+            <span class="challenge-tag badge bg-info">{{ tag }}</span>
+            {% endfor %}
+            {% endblock %}
+          </div>
+          {% endif %}
+          <small class="challenge-attribution text-center text-muted">
+            {% block attribution %}{{ challenge.byline }}{% endblock %}
+          </small>
 
-                      <span class="challenge-desc">{% block description %}{{ challenge.html }}{% endblock %}</span>
+          <small class="challenge-attribution text-center text-muted">
+            {% block attribution %}{{ challenge.byline }}{% endblock %}
+          </small>
+          {% if Configs.challenge_ratings == "public" %}
+          <small class="challenge-ratings text-center text-muted d-block">
+            {% block ratings %}
+            {% if ratings %}
+            <span><i class="fa-solid fa-thumbs-up"></i> {{ ratings.up }}</span>
+            <span class="text-center px-2">
+              {% if ratings.count %}
+              ({{ ((ratings.up / (ratings.count)) * 100) | int }}% liked)
+              {% endif %}
+            </span>
+            <span><i class="fa-solid fa-thumbs-down"></i> {{ ratings.down }}</span>
+            {% endif %}
+            {% endblock %}
+          </small>
+          {% endif %}
 
-                      {% if challenge.connection_info %}
-                      <div class="mb-2">
-                        <span class="challenge-connection-info">
-                          {% block connection_info %}
-                          {% set conn = challenge.connection_info %}
-                          {% if not conn %}
-                          {% elif conn.startswith("http") %}
-                          {{ conn | urlize(target="_blank") }}
-                          {% else %}
-                          <code>{{ conn }}</code>
-                          {% endif %}
-                          {% endblock %}
-                        </span>
-                      </div>
-                      {% endif %}
+          {% if Configs.challenge_ratings == "public" %}
+          <small class="challenge-ratings text-center text-muted d-block">
+            {% block ratings %}
+            {% if ratings %}
+            <span><i class="fa-solid fa-thumbs-up"></i> {{ ratings.up }}</span>
+            <span class="text-center px-2">
+              {% if ratings.count %}
+              ({{ ((ratings.up / (ratings.count)) * 100) | int }}% liked)
+              {% endif %}
+            </span>
+            <span><i class="fa-solid fa-thumbs-down"></i> {{ ratings.down }}</span>
+            {% endif %}
+            {% endblock %}
+          </small>
+          {% endif %}
+          <span class="challenge-desc">{% block description %}{{ challenge.html }}{% endblock %}</span>
 
-                      {% set _display_hints = challenge.hints if (challenge.hints is defined and challenge.hints) else
-                      hints %}
-                      {% if _display_hints %}
-                      <div class="challenge-hints hint-row row">
-                        <div class="col-12 mb-3">
-                          {% for hint in _display_hints | sort(attribute="cost") %}
-                          <div x-data="Hint" x-init="id = {{ hint.id }}">
-                            {% if hint.content and ((hint.cost or 0) == 0 or not hint.prerequisites) %}
-                            <details>
-                              <summary>{% trans %}View Hint{% endtrans %}{% if hint.title %}: {{ hint.title }}{% endif
-                                %}</summary>
-                              <div>{{ hint.html | safe }}</div>
-                            </details>
-                            {% else %}
-                            <details @toggle="showHint(event)">
-                              {% if hint.title %}
-                              <summary>{{ hint.title }} (Cost: {{ hint.cost }} point{{ hint.cost|pluralize }})</summary>
-                              {% else %}
-                              <summary>Unlock Hint for {{ hint.cost }} point{{ hint.cost|pluralize }}</summary>
-                              {% endif %}
-                              <div x-html="html"></div>
-                            </details>
-                            {% endif %}
-                          </div>
-                          {% endfor %}
-                        </div>
-                      </div>
-                      {% endif %}
+          <span class="challenge-desc">{% block description %}{{ challenge.html }}{% endblock %}</span>
+          {% if challenge.connection_info %}
+          <div class="mb-2">
+            <span class="challenge-connection-info">
+              {% block connection_info %}
+              {% set conn = challenge.connection_info %}
+              {% if not conn %}
+              {% elif conn.startswith("http") %}
+              {{ conn | urlize(target="_blank") }}
+              {% else %}
+              <code>{{ conn }}</code>
+              {% endif %}
+              {% endblock %}
+            </span>
+          </div>
+          {% endif %}
 
-                      {% if files %}
-                      <div class="row challenge-files text-center pb-3">
-                        {% for file in files %}
-                        <div class="col-md-4 col-sm-4 col-xs-12 file-button-wrapper d-block">
-                          {% set segments = file.split('/') %}
-                          {% set token = file.split('?') | last %}
-                          {% if token %}
-                          {% set filename = segments | last | replace("?" + token, "") %}
-                          {% else %}
-                          {% set filename = segments | last %}
-                          {% endif %}
-                          <a class="btn btn-info btn-file mb-1 d-inline-block px-2 w-100 text-truncate"
-                            href="{{ file }}" title="{{ filename }}">
-                            <i class="fas fa-download"></i>
-                            <small>
-                              {{ filename }}
-                            </small>
-                          </a>
-                        </div>
-                        {% endfor %}
-                      </div>
-                      {% endif %}
+          {% if challenge.connection_info %}
+          <div class="mb-2">
+            <span class="challenge-connection-info">
+              {% block connection_info %}
+              {% set conn = challenge.connection_info %}
+              {% if not conn %}
+              {% elif conn.startswith("http") %}
+              {{ conn | urlize(target="_blank") }}
+              {% else %}
+              <code>{{ conn }}</code>
+              {% endif %}
+              {% endblock %}
+            </span>
+          </div>
+          {% set _display_hints = challenge.hints if (challenge.hints is defined and challenge.hints) else hints %}
+          {% if _display_hints %}
+          <div class="challenge-hints hint-row row">
+            <div class="col-12 mb-3">
+              {% for hint in _display_hints | sort(attribute="cost") %}
+              <div x-data="Hint" x-init="id = {{ hint.id }}">
+                {% if hint.content and ((hint.cost or 0) == 0 or not hint.prerequisites) %}
+                <details>
+                  <summary>{% trans %}View Hint{% endtrans %}{% if hint.title %}: {{ hint.title }}{% endif %}</summary>
+                  <div>{{ hint.html | safe }}</div>
+                </details>
+                {% else %}
+                <details @toggle="showHint(event)">
+                  {% if hint.title %}
+                  <summary>{{ hint.title }} (Cost: {{ hint.cost }} point{{ hint.cost|pluralize }})</summary>
+                  {% else %}
+                  <summary>Unlock Hint for {{ hint.cost }} point{{ hint.cost|pluralize }}</summary>
+                  {% endif %}
+                  <div x-html="html"></div>
+                </details>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
 
-                      <template x-if="max_attempts > 0">
-                        <p class="text-center">
-                          <span x-text="attempts"></span>/<span x-text="max_attempts"></span> {% trans c=max_attempts
-                          %}attempt{% pluralize %}attempts{% endtrans %}
-                        </p>
-                      </template>
+          {% set _display_hints = challenge.hints if (challenge.hints is defined and challenge.hints) else
+          hints %}
+          {% if _display_hints %}
+          <div class="challenge-hints hint-row row">
+            <div class="col-12 mb-3">
+              {% for hint in _display_hints | sort(attribute="cost") %}
+              <div x-data="Hint" x-init="id = {{ hint.id }}">
+                {% if hint.content and ((hint.cost or 0) == 0 or not hint.prerequisites) %}
+                <details>
+                  <summary>{% trans %}View Hint{% endtrans %}{% if hint.title %}: {{ hint.title }}{% endif
+                    %}</summary>
+                  <div>{{ hint.html | safe }}</div>
+                </details>
+                {% else %}
+                <details @toggle="showHint(event)">
+                  {% if hint.title %}
+                  <summary>{{ hint.title }} (Cost: {{ hint.cost }} point{{ hint.cost|pluralize }})</summary>
+                  {% else %}
+                  <summary>Unlock Hint for {{ hint.cost }} point{{ hint.cost|pluralize }}</summary>
+                  {% endif %}
+                  <div x-html="html"></div>
+                </details>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% if files %}
+          <div class="row challenge-files text-center pb-3">
+            {% for file in files %}
+            <div class="col-md-4 col-sm-4 col-xs-12 file-button-wrapper d-block">
+              {% set segments = file.split('/') %}
+              {% set token = file.split('?') | last %}
+              {% if token %}
+              {% set filename = segments | last | replace("?" + token, "") %}
+              {% else %}
+              {% set filename = segments | last %}
+              {% endif %}
+              <a class="btn btn-info btn-file mb-1 d-inline-block px-2 w-100 text-truncate" href="{{ file }}"
+                title="{{ filename }}">
+                <i class="fas fa-download"></i>
+                <small>
+                  {{ filename }}
+                </small>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
 
-                      {% set _flag_txt %}{% trans %}Flag{% endtrans %}{% endset %}
-                      {% set _submit_txt %}{% trans %}Submit{% endtrans %}{% endset %}
-                      <div class="row submit-row">
-                        <div class="col-12 col-sm-8">
-                          {% block input %}
-                          <input id="challenge-id" class="challenge-id" type="hidden" value="{{ challenge.id }}">
-                          <input id="challenge-input" class="challenge-input form-control" type="text" name="submission"
-                            @keyup.enter="submitChallenge()"
-                            placeholder="{{ '🔒 Tiempo agotado (20:00) - Envío cerrado' if (_srv_active and _srv_expired) else _flag_txt }}"
-                            {{ 'disabled' if (_srv_active and _srv_expired) else '' }} x-model="submission">
-                          {% endblock %}
-                        </div>
+          {% if files %}
+          <div class="row challenge-files text-center pb-3">
+            {% for file in files %}
+            <div class="col-md-4 col-sm-4 col-xs-12 file-button-wrapper d-block">
+              {% set segments = file.split('/') %}
+              {% set token = file.split('?') | last %}
+              {% if token %}
+              {% set filename = segments | last | replace("?" + token, "") %}
+              {% else %}
+              {% set filename = segments | last %}
+              {% endif %}
+              <a class="btn btn-info btn-file mb-1 d-inline-block px-2 w-100 text-truncate" href="{{ file }}"
+                title="{{ filename }}">
+                <i class="fas fa-download"></i>
+                <small>
+                  {{ filename }}
+                </small>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <template x-if="max_attempts > 0">
+            <p class="text-center">
+              <span x-text="attempts"></span>/<span x-text="max_attempts"></span> {% trans c=max_attempts %}attempt{%
+              pluralize %}attempts{% endtrans %}
+            </p>
+          </template>
 
-                        <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
-                          {% block submit %}
-                            class="challenge-submit btn {{ 'btn-danger disabled' if (_srv_active and _srv_expired) else 'btn-outline-secondary' }} w-100 h-100"
-                            {{ 'disabled' if (_srv_active and _srv_expired) else '' }}
-                            @click.debounce.500ms="submitChallenge()">
-                            <span id="ctf-modal-submit-label">{{ '🔒 Cerrado (00:00)' if (_srv_active and _srv_expired)
-                              else _submit_txt }}</span>
-                          </button>
-                          {% endblock %}
-                        </div>
-                      </div>
+          <template x-if="max_attempts > 0">
+            <p class="text-center">
+              <span x-text="attempts"></span>/<span x-text="max_attempts"></span> {% trans c=max_attempts
+              %}attempt{% pluralize %}attempts{% endtrans %}
+            </p>
+          </template>
+          <div class="row submit-row">
+            <div class="col-12 col-sm-8">
+              {% block input %}
+              <input id="challenge-id" class="challenge-id" type="hidden" value="{{ challenge.id }}">
+              <input id="challenge-input" class="challenge-input form-control" type="text" name="submission"
+                @keyup.enter="submitChallenge()" placeholder="{% trans %}Flag{% endtrans %}" x-model="submission">
+              {% endblock %}
+            </div>
 
-                      <div class="row notification-row">
-                        <div class="col-12">
-                          <template x-if="response">
-                            {# This alert is re-used for all alerts, so it's important not to make it dismissible #}
-                            <div class="alert text-center w-100 mt-3" :class="{
+            {% set _flag_txt %}{% trans %}Flag{% endtrans %}{% endset %}
+            {% set _submit_txt %}{% trans %}Submit{% endtrans %}{% endset %}
+            <div class="row submit-row">
+              <div class="col-12 col-sm-8">
+                {% block input %}
+                <input id="challenge-id" class="challenge-id" type="hidden" value="{{ challenge.id }}">
+                <input id="challenge-input" class="challenge-input form-control" type="text" name="submission"
+                  @keyup.enter="submitChallenge()"
+                  placeholder="{{ '🔒 Tiempo agotado (20:00) - Envío cerrado' if (_srv_active and _srv_expired) else _flag_txt }}"
+                  {{ 'disabled' if (_srv_active and _srv_expired) else '' }} x-model="submission">
+                {% endblock %}
+              </div>
+              <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
+                {% block submit %}
+                <button id="challenge-submit" class="challenge-submit btn btn-outline-secondary w-100 h-100"
+                  type="submit" @click.debounce.500ms="submitChallenge()">
+                  <span id="ctf-modal-submit-label">{% trans %}Submit{% endtrans %}</span>
+                </button>
+                {% endblock %}
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
+              {% block submit %}
+              class="challenge-submit btn {{ 'btn-danger disabled' if (_srv_active and _srv_expired) else
+              'btn-outline-secondary' }} w-100 h-100"
+              {{ 'disabled' if (_srv_active and _srv_expired) else '' }}
+              @click.debounce.500ms="submitChallenge()">
+              <span id="ctf-modal-submit-label">{{ '🔒 Cerrado (00:00)' if (_srv_active and _srv_expired)
+                else _submit_txt }}</span>
+              </button>
+              {% endblock %}
+            </div>
+          </div>
+
+          <div class="row notification-row">
+            <div class="col-12">
+              <template x-if="response">
+                {# This alert is re-used for all alerts, so it's important not to make it dismissible #}
+                <div class="alert text-center w-100 mt-3" :class="{
+            <div class=" row notification-row">
+                  <div class="col-12">
+                    <template x-if="response">
+                      {# This alert is re-used for all alerts, so it's important not to make it dismissible #}
+                      <div class="alert text-center w-100 mt-3" :class="{
                         'alert-success': response.data.status == 'correct',
                         'alert-info': response.data.status == 'already_solved',
                         'alert-danger': response.data.status == 'incorrect',
                         'alert-warning': response.data.status == 'paused',
                       }" role="alert">
-                              <strong x-text="response.data.message"></strong>
-                              <div
-                                x-show="(response.data.status == 'correct' || response.data.status == 'already_solved')">
-                                <div x-show="getNextId()">
-                                  <button @click="nextChallenge()" class="btn btn-info mt-3">
-                                    {% trans %}Next Challenge{% endtrans %}
-                                  </button>
-                                </div>
+                        <strong x-text="response.data.message"></strong>
+                        <div x-show="(response.data.status == 'correct' || response.data.status == 'already_solved')">
+                          <div x-show="getNextId()">
+                            <button @click="nextChallenge()" class="btn btn-info mt-3">
+                              {% trans %}Next Challenge{% endtrans %}
+                            </button>
+                          </div>
 
-                                {% if Configs.social_shares %}
-                                <div>
-                                  <button x-show="!share_url" @click="getShareUrl()"
-                                    class="btn btn-sm btn-outline-info mt-3">
-                                    {% trans %}Share{% endtrans %}
-                                  </button>
-                                  <div class="btn-group mt-3" role="group" x-show="share_url">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                      @click="copyShareUrl()" data-bs-toggle="tooltip" data-bs-title="Copied!">
-                                      <i class="fa-solid fa-copy"></i>
-                                    </button>
-                                    <a :href="'https://twitter.com/intent/tweet?url=' + encodeURIComponent(share_url)"
-                                      role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
-                                      <i class="fa-brands fa-twitter"></i>
-                                    </a>
-                                    <a :href="'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(share_url)"
-                                      role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
-                                      <i class="fa-brands fa-facebook-f"></i>
-                                    </a>
-                                    <a :href="'http://www.linkedin.com/shareArticle?url=' + encodeURIComponent(share_url)"
-                                      role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
-                                      <i class="fa-brands fa-linkedin-in"></i>
-                                    </a>
-                                  </div>
-                                </div>
-                                {% endif %}
+                          {% if Configs.social_shares %}
+                          <div>
+                            <button x-show="!share_url" @click="getShareUrl()" class="btn btn-sm btn-outline-info mt-3">
+                              {% trans %}Share{% endtrans %}
+                            </button>
+                            <div class="btn-group mt-3" role="group" x-show="share_url">
+                              <button type="button" class="btn btn-sm btn-outline-secondary" @click="copyShareUrl()"
+                                data-bs-toggle="tooltip" data-bs-title="Copied!">
+                                <i class="fa-solid fa-copy"></i>
+                              </button>
+                              <a :href="'https://twitter.com/intent/tweet?url=' + encodeURIComponent(share_url)"
+                                role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="fa-brands fa-twitter"></i>
+                              </a>
+                              <a :href="'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(share_url)"
+                                role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="fa-brands fa-facebook-f"></i>
+                              </a>
+                              <a :href="'http://www.linkedin.com/shareArticle?url=' + encodeURIComponent(share_url)"
+                                role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="fa-brands fa-linkedin-in"></i>
+                              </a>
+                            </div>
+                          </div>
+                          {% endif %}
 
-                                {% if Configs.challenge_ratings != "disabled" %}
-                                <div class="mt-3">
-                                  <hr>
-                                  <div class="text-center">
-                                    <p class="mb-2">{% trans %}Rate this challenge:{% endtrans %}</p>
-                                    <div class="rating-buttons mb-2" x-init="selectedRating = ratingValue || 0;">
-                                      <button class="btn btn-outline-success me-2"
-                                        :class="{ 'active': selectedRating === 1 }" @click="selectedRating = 1">
-                                        <i class="fa-solid fa-thumbs-up"></i>
-                                      </button>
-                                      <button class="btn btn-outline-danger"
-                                        :class="{ 'active': selectedRating === -1 }" @click="selectedRating = -1">
-                                        <i class="fa-solid fa-thumbs-down"></i>
-                                      </button>
-                                    </div>
-                                    <div class="mt-3">
-                                      <textarea class="form-control" rows="2" x-model="ratingReview"
-                                        placeholder="{% trans %}Write a review (optional){% endtrans %}"
-                                        maxlength="2000"></textarea>
-                                    </div>
-                                    <div class="mt-3">
-                                      <button @click="submitRating()" class="btn btn-primary"
-                                        :disabled="!selectedRating">
-                                        {% trans %}Submit{% endtrans %}
-                                      </button>
-                                    </div>
-                                    <div x-show="ratingSubmitted" class="text-success mt-2">
-                                      <small>{% trans %}Thank you for your rating!{% endtrans %}</small>
-                                    </div>
-                                  </div>
-                                </div>
-                                {% endif %}
+                          {% if Configs.challenge_ratings != "disabled" %}
+                          <div class="mt-3">
+                            <hr>
+                            <div class="text-center">
+                              <p class="mb-2">{% trans %}Rate this challenge:{% endtrans %}</p>
+                              <div class="rating-buttons mb-2" x-init="selectedRating = ratingValue || 0;">
+                                <button class="btn btn-outline-success me-2" :class="{ 'active': selectedRating === 1 }"
+                                  @click="selectedRating = 1">
+                                  <i class="fa-solid fa-thumbs-up"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" :class="{ 'active': selectedRating === -1 }"
+                                  @click="selectedRating = -1">
+                                  <i class="fa-solid fa-thumbs-down"></i>
+                                </button>
+                              </div>
+                              <div class="mt-3">
+                                <textarea class="form-control" rows="2" x-model="ratingReview"
+                                  placeholder="{% trans %}Write a review (optional){% endtrans %}"
+                                  maxlength="2000"></textarea>
+                              </div>
+                              <div class="mt-3">
+                                <button @click="submitRating()" class="btn btn-primary" :disabled="!selectedRating">
+                                  {% trans %}Submit{% endtrans %}
+                                </button>
+                              </div>
+                              <div x-show="ratingSubmitted" class="text-success mt-2">
+                                <small>{% trans %}Thank you for your rating!{% endtrans %}</small>
                               </div>
                             </div>
-                          </template>
+                          </div>
+                          {% endif %}
                         </div>
                       </div>
+                    </template>
+                  </div>
+                  }" role="alert"
+                  >
+                  <strong x-text="response.data.message"></strong>
+                  <div x-show="(response.data.status == 'correct' || response.data.status == 'already_solved')">
+                    <div x-show="getNextId()">
+                      <button @click="nextChallenge()" class="btn btn-info mt-3">
+                        {% trans %}Next Challenge{% endtrans %}
+                      </button>
                     </div>
+                  </div>
 
-                    <div role="tabpanel" class="tab-pane fade" id="submissions">
-                      <div class="row">
-                        <div class="col-md-12">
-                          <table class="table table-striped align-middle text-center">
-                            <thead>
+                  <div role="tabpanel" class="tab-pane fade" id="submissions">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <table class="table table-striped align-middle text-center">
+                          <thead>
+                            <tr>
+                              <th>{% trans %}Submission{% endtrans %}</th>
+                              <th>{% trans %}Type{% endtrans %}</th>
+                              <th>{% trans %}Date{% endtrans %}</th>
+                            </tr>
+                          </thead>
+                          <tbody id="challenge-submission-names">
+                            <template x-for="submission in submissions">
                               <tr>
-                                <th>{% trans %}Submission{% endtrans %}</th>
-                                <th>{% trans %}Type{% endtrans %}</th>
-                                <th>{% trans %}Date{% endtrans %}</th>
+                                <td x-data="{ truncate: true }">
+                                  <code
+                                    x-text="truncate ? '*'.repeat(submission.provided.length) : submission.provided"></code>
+                                  <button class="btn btn-link p-0 pl-1" @click="truncate = !truncate">
+                                    <i :class="truncate ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
+                                  </button>
+                                </td>
+                                <td x-text="submission.type"></td>
+                                <td x-text="submission.date"></td>
                               </tr>
-                            </thead>
-                            <tbody id="challenge-submission-names">
-                              <template x-for="submission in submissions">
-                                <tr>
-                                  <td x-data="{ truncate: true }">
-                                    <code
-                                      x-text="truncate ? '*'.repeat(submission.provided.length) : submission.provided"></code>
-                                    <button class="btn btn-link p-0 pl-1" @click="truncate = !truncate">
-                                      <i :class="truncate ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
-                                    </button>
-                                  </td>
-                                  <td x-text="submission.type"></td>
-                                  <td x-text="submission.date"></td>
-                                </tr>
-                              </template>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div role="tabpanel" class="tab-pane fade" id="solves">
-                      <div class="row">
-                        <div class="col-md-12">
-                          <table class="table table-striped align-middle text-center">
-                            <thead>
-                              <tr>
-                                <th>{% trans %}Name{% endtrans %}</th>
-                                <th>{% trans %}Date{% endtrans %}</th>
-                              </tr>
-                            </thead>
-                            <tbody id="challenge-solves-names">
-                              <template x-for="solve in solves">
-                                <tr>
-                                  <td>
-                                    <a :href="solve.account_url" x-text="solve.name"></a>
-                                  </td>
-                                  <td x-text="solve.date"></td>
-                                </tr>
-                              </template>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div role="tabpanel" class="tab-pane fade" id="solution">
-                      <div class="row">
-                        <div class="col-md-12">
-                          <div class="challenge-solution-content pt-3">
-                            <template x-if="solution">
-                              <div x-html="solution" style="white-space: pre-wrap;">
-                              </div>
                             </template>
+                          </tbody>
+                        </table>
+                        {% if Configs.social_shares %}
+                        <div>
+                          <button x-show="!share_url" @click="getShareUrl()" class="btn btn-sm btn-outline-info mt-3">
+                            {% trans %}Share{% endtrans %}
+                          </button>
+                          <div class="btn-group mt-3" role="group" x-show="share_url">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="copyShareUrl()"
+                              data-bs-toggle="tooltip" data-bs-title="Copied!">
+                              <i class="fa-solid fa-copy"></i>
+                            </button>
+                            <a :href="'https://twitter.com/intent/tweet?url=' + encodeURIComponent(share_url)"
+                              role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
+                              <i class="fa-brands fa-twitter"></i>
+                            </a>
+                            <a :href="'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(share_url)"
+                              role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
+                              <i class="fa-brands fa-facebook-f"></i>
+                            </a>
+                            <a :href="'http://www.linkedin.com/shareArticle?url=' + encodeURIComponent(share_url)"
+                              role="button" class="btn btn-sm btn-outline-secondary" target="_blank">
+                              <i class="fa-brands fa-linkedin-in"></i>
+                            </a>
                           </div>
                         </div>
                       </div>
-                    </div>
+                      {% endif %}
 
+                      <div role="tabpanel" class="tab-pane fade" id="solves">
+                        <div class="row">
+                          <div class="col-md-12">
+                            <table class="table table-striped align-middle text-center">
+                              <thead>
+                                <tr>
+                                  <th>{% trans %}Name{% endtrans %}</th>
+                                  <th>{% trans %}Date{% endtrans %}</th>
+                                </tr>
+                              </thead>
+                              <tbody id="challenge-solves-names">
+                                <template x-for="solve in solves">
+                                  <tr>
+                                    <td>
+                                      <a :href="solve.account_url" x-text="solve.name"></a>
+                                    </td>
+                                    <td x-text="solve.date"></td>
+                                  </tr>
+                                </template>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div role="tabpanel" class="tab-pane fade" id="solution">
+                        <div class="row">
+                          <div class="col-md-12">
+                            <div class="challenge-solution-content pt-3">
+                              <template x-if="solution">
+                                <div x-html="solution" style="white-space: pre-wrap;">
+                                </div>
+                              </template>
+                              {% if Configs.challenge_ratings != "disabled" %}
+                              <div class="mt-3">
+                                <hr>
+                                <div class="text-center">
+                                  <p class="mb-2">{% trans %}Rate this challenge:{% endtrans %}</p>
+                                  <div class="rating-buttons mb-2" x-init="selectedRating = ratingValue || 0;">
+                                    <button class="btn btn-outline-success me-2"
+                                      :class="{ 'active': selectedRating === 1 }" @click="selectedRating = 1">
+                                      <i class="fa-solid fa-thumbs-up"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" :class="{ 'active': selectedRating === -1 }"
+                                      @click="selectedRating = -1">
+                                      <i class="fa-solid fa-thumbs-down"></i>
+                                    </button>
+                                  </div>
+                                  <div class="mt-3">
+                                    <textarea class="form-control" rows="2" x-model="ratingReview"
+                                      placeholder="{% trans %}Write a review (optional){% endtrans %}"
+                                      maxlength="2000"></textarea>
+                                  </div>
+                                  <div class="mt-3">
+                                    <button @click="submitRating()" class="btn btn-primary" :disabled="!selectedRating">
+                                      {% trans %}Submit{% endtrans %}
+                                    </button>
+                                  </div>
+                                  <div x-show="ratingSubmitted" class="text-success mt-2">
+                                    <small>{% trans %}Thank you for your rating!{% endtrans %}</small>
+                                  </div>
+                                </div>
+                              </div>
+                              {% endif %}
+                            </div>
+                          </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane fade" id="submissions">
+          <div class="row">
+            <div class="col-md-12">
+              <table class="table table-striped align-middle text-center">
+                <thead>
+                  <tr>
+                    <th>{% trans %}Submission{% endtrans %}</th>
+                    <th>{% trans %}Type{% endtrans %}</th>
+                    <th>{% trans %}Date{% endtrans %}</th>
+                  </tr>
+                </thead>
+                <tbody id="challenge-submission-names">
+                  <template x-for="submission in submissions">
+                    <tr>
+                      <td x-data="{ truncate: true }">
+                        <code x-text="truncate ? '*'.repeat(submission.provided.length) : submission.provided"></code>
+                        <button class="btn btn-link p-0 pl-1" @click="truncate = !truncate">
+                          <i :class="truncate ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
+                        </button>
+                      </td>
+                      <td x-text="submission.type"></td>
+                      <td x-text="submission.date"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane fade" id="solves">
+          <div class="row">
+            <div class="col-md-12">
+              <table class="table table-striped align-middle text-center">
+                <thead>
+                  <tr>
+                    <th>{% trans %}Name{% endtrans %}</th>
+                    <th>{% trans %}Date{% endtrans %}</th>
+                  </tr>
+                </thead>
+                <tbody id="challenge-solves-names">
+                  <template x-for="solve in solves">
+                    <tr>
+                      <td>
+                        <a :href="solve.account_url" x-text="solve.name"></a>
+                      </td>
+                      <td x-text="solve.date"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane fade" id="solution">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="challenge-solution-content pt-3">
+                <template x-if="solution">
+                  <div x-html="solution" style="white-space: pre-wrap;">
+                  </div>
+                </template>
               </div>
             </div>
           </div>
         </div>
+
       </div>
+    </div>
+  </div>
+</div>
+</div>
