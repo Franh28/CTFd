@@ -570,9 +570,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       <div class="museum-panel">
         <div class="museum-panel-title">🔎 Buscador de Reliquias del Museo (v1.976)</div>
 
-        <p class="museum-quick-help">
-          👇 <strong>¿No sabes SQL?</strong> Pulsa estos 3 botones de búsqueda rápida y observa en la consola de abajo cómo habla el buscador con la base de datos:
-        </p>
         <div class="museum-quick-buttons">
           <button type="button" id="btn-preset-1" class="museum-btn-preset">
             📼 Botón 1: Ver reliquias de los 70
@@ -654,16 +651,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
           1️⃣ <code>codigo_secreto</code><br>
           2️⃣ <code>contenido_flag</code>
         </p>
-      </div>
-
-      <div class="museum-cheat-card">
-        <h4>🧩 Resumen de Pistas Visuales</h4>
-        <ul>
-          <li>La tabla del museo siempre muestra <strong>2 columnas</strong>.</li>
-          <li>Si escribes una comilla <code>'</code> en el buscador, <strong>cierras el texto</strong> y pasas a dar órdenes a la base de datos.</li>
-          <li>El <strong>Botón 2</strong> te enseña cómo funciona <code>UNION SELECT col1, col2 FROM otra_tabla</code>.</li>
-          <li>El <strong>Botón 3</strong> te enseña cómo <code>--</code> <strong>tacha e ignora</strong> el final de la frase que te estorba.</li>
-        </ul>
       </div>
     </div>
   </div>
@@ -879,16 +866,13 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         `<span class="sql-kw">FROM</span> catalogo_museo ` +
         `<span class="sql-kw">WHERE</span> epoca = <span class="sql-str">'70s'</span> ` +
         `<span class="sql-kw">AND</span> oculto = 0`;
-      feedbackEl.innerHTML =
-        `📼 <strong>Botón 1 activo:</strong> Consulta normal filtrando por los años 70. ¡Prueba ahora el <strong>Botón 2</strong> y el <strong>Botón 3</strong>!`;
-      return;
     }
     if (val === "" && activePreset === "2") {
       previewEl.innerHTML =
         `<span class="sql-kw">SELECT</span> nombre_reliquia, año_hallazgo <span class="sql-kw">FROM</span> catalogo_museo <span class="sql-kw">WHERE</span> oculto = 0 ` +
         `<span class="sql-injected">UNION SELECT objeto_donado, autor FROM donaciones_alumnos</span>`;
       feedbackEl.innerHTML =
-        `🤝 <strong>Botón 2 activo:</strong> ¡Fíjate en la parte verde! Con <code>UNION SELECT col1, col2 FROM tabla</code> hemos unido otra tabla distinta al resultado.`;
+        ``;
       return;
     }
 
@@ -907,13 +891,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         `<span class="sql-str">%'</span> <span class="sql-kw">AND</span> oculto = 0`;
 
       if (commentIdx !== -1) {
-        feedbackEl.innerHTML =
-          `💡 Has escrito <code>--</code>, pero sigue <strong>dentro de las comillas amarillas</strong> del texto. ` +
-          `Escribe una comilla simple <code>'</code> al principio para salir del texto de búsqueda.`;
       } else {
-        feedbackEl.innerHTML =
-          `📝 <strong>Modo búsqueda normal:</strong> Todo lo que escribes está encerrado dentro de <code>'%...%'</code>. ` +
-          `Prueba a escribir una comilla simple <code>'</code> para romper la cadena.`;
       }
       return;
     }
@@ -938,9 +916,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         feedbackEl.innerHTML =
           `🚀 <strong>¡Inyección lista!</strong> Has cerrado la comilla <code>'</code>, has unido la tabla <code>capsula_1976</code> y has tachado el final con <code>--</code>. ¡Pulsa <strong>Buscar en el Archivo</strong>!`;
       } else {
-        feedbackEl.innerHTML =
-          `✂️ <strong>¡Final tachado con éxito!</strong> Todo lo que va detrás de <code>--</code> ha quedado anulado. ` +
-          `Ahora puedes escribir tu comando <code>UNION SELECT ... FROM ...</code> en la zona verde entre <code>'</code> y <code>--</code>.`;
+        
       }
     } else {
       previewEl.innerHTML =
@@ -949,10 +925,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         `<span class="sql-quote-break" title="Has cerrado la comilla">'</span>` +
         `<span class="sql-injected">${escapeHtml(afterQuote)}</span>` +
         `<span class="sql-dangling">${escapeHtml(suffixRaw)}</span>`;
-
-      feedbackEl.innerHTML =
-        `🔓 <strong>¡Comilla rota!</strong> Lo que escribas ahora en verde se ejecutará como código SQL. ` +
-        `⚠️ Recuerda terminar tu frase con <code>--</code> para tachar el trozo rojo sobrante (<code>%' AND oculto = 0</code>).`;
     }
   }
 
@@ -1002,11 +974,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
 
     if (p === "1") {
       inputEl.value = "";
-      tutorialEl.style.display = "block";
-      tutorialEl.innerHTML =
-        "📼 <strong>Explicación del Botón 1 (Consulta Básica):</strong> " +
-        "La base de datos ha ejecutado <code>SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo WHERE epoca = '70s'</code>. " +
-        "Fíjate en que siempre pedimos <strong>2 columnas</strong> separadas por coma.";
       const rows = DB_TABLES.catalogo_museo
         .filter(r => r.epoca === "70s" && r.oculto === 0)
         .map(r => [r.nombre_reliquia, r["año_hallazgo"]]);
@@ -1014,12 +981,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       renderTableRows(rows);
     } else if (p === "2") {
       inputEl.value = "";
-      tutorialEl.style.display = "block";
-      tutorialEl.innerHTML =
-        "🤝 <strong>Explicación del Botón 2 (Cómo unir otra tabla con UNION):</strong> " +
-        "¡Mira la consola! Al añadir <code>UNION SELECT col1, col2 FROM otra_tabla</code>, la base de datos " +
-        "pega las filas de esa segunda tabla al final de la tabla del museo. " +
-        "¿Y si haces lo mismo con la tabla y las 2 columnas que menciona el <strong>Post-it amarillo</strong>?";
       const rows = DB_TABLES.catalogo_museo
         .filter(r => r.oculto === 0)
         .map(r => [r.nombre_reliquia, r["año_hallazgo"]])
@@ -1028,12 +989,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       renderTableRows(rows);
     } else if (p === "3") {
       inputEl.value = "IBM%' -- ";
-      tutorialEl.style.display = "block";
-      tutorialEl.innerHTML =
-        "🔧 <strong>Explicación del Botón 3 (Cerrar comilla y tachar con <code>--</code>):</strong> " +
-        "Hemos buscado <code>IBM%' -- </code>. La comilla simple <code>'</code> cierra el texto antes de tiempo, y los dos guiones " +
-        "<code>--</code> <strong>tachan e ignoran</strong> el filtro <code>%' AND oculto = 0</code> del final (¡por eso acaba de aparecer " +
-        "en la tabla el <em>Prototipo IBM 5100 Oculto</em>!). Ahora combina este truco con el <code>UNION SELECT</code> del Botón 2.";
       renderLiveQuery();
       runUserSearch();
     }
