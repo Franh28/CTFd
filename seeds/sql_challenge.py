@@ -866,6 +866,8 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         `<span class="sql-kw">FROM</span> catalogo_museo ` +
         `<span class="sql-kw">WHERE</span> epoca = <span class="sql-str">'70s'</span> ` +
         `<span class="sql-kw">AND</span> oculto = 0`;
+      feedbackEl.innerHTML = "";
+      return;
     }
     if (val === "" && activePreset === "2") {
       previewEl.innerHTML =

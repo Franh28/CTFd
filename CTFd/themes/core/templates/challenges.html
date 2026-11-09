@@ -243,183 +243,185 @@
           serverNowBootSec = srvNowAttr;
           clientBootMs = Date.now();
         }
-          const startedAttr = Number(modalBox.getAttribute("data-started-at"));
-          if (startedAttr > 1000000000) {
-            const remInit = Math.max(0, Math.min(DURATION_SEC, DURATION_SEC - (serverNowBootSec - startedAttr)));
-            updateEntryFromRemaining(chalId, true, remInit);
-          } else if (!timerMap[chalId]) {
-            updateEntryFromRemaining(chalId, false, null);
-          }
-        }
-
-        const st = getRemainingForId(chalId);
-        const inactiveEl = document.getElementById("ctf-modal-timer-inactive");
-        const runningEl = document.getElementById("ctf-modal-timer-running");
-        const expiredEl = document.getElementById("ctf-modal-timer-expired");
-        const displayEl = document.getElementById("ctf-modal-timer-display");
-        const barEl = document.getElementById("ctf-modal-timer-bar");
-        const stopBtn = document.getElementById("ctf-modal-timer-stop-btn");
-        const inputEl = document.getElementById("challenge-input");
-        const submitBtn = document.getElementById("challenge-submit");
-        const submitLbl = document.getElementById("ctf-modal-submit-label");
-
-        if (!st.active) {
-          modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-dark border-secondary text-muted";
-          if (inactiveEl) inactiveEl.style.display = "";
-          if (runningEl) runningEl.style.display = "none";
-          if (expiredEl) expiredEl.style.display = "none";
-          if (stopBtn) stopBtn.style.display = "none";
-          if (inputEl) {
-            inputEl.disabled = false;
-            if (inputEl.placeholder.indexOf("Tiempo agotado") !== -1) inputEl.placeholder = "Flag";
-          }
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove("btn-danger", "disabled");
-            submitBtn.classList.add("btn-outline-secondary");
-          }
-          if (submitLbl && submitLbl.textContent.indexOf("Cerrado") !== -1) {
-            submitLbl.textContent = "Enviar";
-          }
-        } else if (st.expired) {
-          modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-danger bg-opacity-10 border-danger text-danger";
-          if (inactiveEl) inactiveEl.style.display = "none";
-          if (runningEl) runningEl.style.display = "none";
-          if (expiredEl) expiredEl.style.display = "";
-          if (stopBtn) stopBtn.style.display = "";
-          if (inputEl) {
-            inputEl.disabled = true;
-            inputEl.placeholder = "🔒 Tiempo agotado (20:00) - Envío cerrado";
-          }
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.classList.remove("btn-outline-secondary");
-            submitBtn.classList.add("btn-danger", "disabled");
-          }
-          if (submitLbl) {
-            submitLbl.textContent = "🔒 Cerrado (00:00)";
-          }
-        } else {
-          const isWarn = st.rem <= 300;
-          modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border " +
-            (isWarn ? "bg-warning bg-opacity-10 border-warning text-warning" : "bg-dark border-success text-light");
-          if (inactiveEl) inactiveEl.style.display = "none";
-          if (runningEl) runningEl.style.display = "";
-          if (expiredEl) expiredEl.style.display = "none";
-          if (stopBtn) stopBtn.style.display = "";
-          if (displayEl) {
-            displayEl.textContent = formatMMSS(st.rem);
-            displayEl.className = "badge fs-6 font-monospace " + (isWarn ? "bg-warning text-dark" : "bg-success");
-          }
-          if (barEl) {
-            const pct = Math.max(0, Math.min(100, (st.rem / DURATION_SEC) * 100)).toFixed(1);
-            barEl.style.width = pct + "%";
-            barEl.style.height = "100%";
-            barEl.style.backgroundColor = isWarn ? "#ffc107" : "#198754";
-            barEl.className = "progress-bar progress-bar-striped progress-bar-animated " + (isWarn ? "bg-warning" : "bg-success");
-          }
-          if (inputEl) {
-            inputEl.disabled = false;
-            if (inputEl.placeholder.indexOf("Tiempo agotado") !== -1) inputEl.placeholder = "Flag";
-          }
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove("btn-danger", "disabled");
-            submitBtn.classList.add("btn-outline-secondary");
-          }
-          if (submitLbl && submitLbl.textContent.indexOf("Cerrado") !== -1) {
-            submitLbl.textContent = "Enviar";
-          }
+        const startedAttr = Number(modalBox.getAttribute("data-started-at"));
+        if (startedAttr > 1000000000) {
+          const remInit = Math.max(0, Math.min(DURATION_SEC, DURATION_SEC - (serverNowBootSec - startedAttr)));
+          updateEntryFromRemaining(chalId, true, remInit);
+        } else if (!timerMap[chalId]) {
+          updateEntryFromRemaining(chalId, false, null);
         }
       }
 
-      // 2. Update all card badges on /challenges board
-      const badges = document.querySelectorAll(".ctf-card-timer-badge[data-chal-id]");
-      badges.forEach(badge => {
-        const cid = Number(badge.getAttribute("data-chal-id"));
-        const st = getRemainingForId(cid);
-        if (!st.active) {
-          badge.className = "badge font-monospace bg-secondary opacity-75 ctf-card-timer-badge";
-          badge.textContent = "⏸️ 20:00 (Sin iniciar)";
-        } else if (st.expired) {
-          badge.className = "badge font-monospace bg-danger ctf-card-timer-badge";
-          badge.textContent = "🔒 00:00 (Cerrado)";
-        } else {
-          const isWarn = st.rem <= 300;
-          badge.className = "badge font-monospace ctf-card-timer-badge " + (isWarn ? "bg-warning text-dark" : "bg-success");
-          badge.textContent = "⏱️ " + formatMMSS(st.rem);
+      const st = getRemainingForId(chalId);
+      const inactiveEl = document.getElementById("ctf-modal-timer-inactive");
+      const runningEl = document.getElementById("ctf-modal-timer-running");
+      const expiredEl = document.getElementById("ctf-modal-timer-expired");
+      const displayEl = document.getElementById("ctf-modal-timer-display");
+      const barEl = document.getElementById("ctf-modal-timer-bar");
+      const stopBtn = document.getElementById("ctf-modal-timer-stop-btn");
+      const inputEl = document.getElementById("challenge-input");
+      const submitBtn = document.getElementById("challenge-submit");
+      const submitLbl = document.getElementById("ctf-modal-submit-label");
+
+      if (!st.active) {
+        modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-dark border-secondary text-muted";
+        if (inactiveEl) inactiveEl.style.display = "";
+        if (runningEl) runningEl.style.display = "none";
+        if (expiredEl) expiredEl.style.display = "none";
+        if (stopBtn) stopBtn.style.display = "none";
+        if (inputEl) {
+          inputEl.disabled = false;
+          if (inputEl.placeholder.indexOf("Tiempo agotado") !== -1) inputEl.placeholder = "Flag";
         }
-      });
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("btn-danger", "disabled");
+          submitBtn.classList.add("btn-outline-secondary");
+        }
+        if (submitLbl && submitLbl.textContent.indexOf("Cerrado") !== -1) {
+          submitLbl.textContent = "Enviar";
+        }
+      } else if (st.expired) {
+        modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border bg-danger bg-opacity-10 border-danger text-danger";
+        if (inactiveEl) inactiveEl.style.display = "none";
+        if (runningEl) runningEl.style.display = "none";
+        if (expiredEl) expiredEl.style.display = "";
+        if (stopBtn) stopBtn.style.display = "";
+        if (inputEl) {
+          inputEl.disabled = true;
+          inputEl.placeholder = "🔒 Tiempo agotado (20:00) - Envío cerrado";
+        }
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.remove("btn-outline-secondary");
+          submitBtn.classList.add("btn-danger", "disabled");
+        }
+        if (submitLbl) {
+          submitLbl.textContent = "🔒 Cerrado (00:00)";
+        }
+      } else {
+        const isWarn = st.rem <= 300;
+        modalBox.className = "challenge-timer-container my-3 px-3 py-2 rounded text-center border " +
+          (isWarn ? "bg-warning bg-opacity-10 border-warning text-warning" : "bg-dark border-success text-light");
+        if (inactiveEl) inactiveEl.style.display = "none";
+        if (runningEl) runningEl.style.display = "";
+        if (expiredEl) expiredEl.style.display = "none";
+        if (stopBtn) stopBtn.style.display = "";
+        if (displayEl) {
+          displayEl.textContent = formatMMSS(st.rem);
+          displayEl.className = "badge fs-6 font-monospace " + (isWarn ? "bg-warning text-dark" : "bg-success");
+        }
+        if (barEl) {
+          const pct = Math.max(0, Math.min(100, (st.rem / DURATION_SEC) * 100)).toFixed(1);
+          barEl.style.width = pct + "%";
+          barEl.style.height = "100%";
+          barEl.style.backgroundColor = isWarn ? "#ffc107" : "#198754";
+          barEl.className = "progress-bar progress-bar-striped progress-bar-animated " + (isWarn ? "bg-warning" : "bg-success");
+        }
+        if (inputEl) {
+          inputEl.disabled = false;
+          if (inputEl.placeholder.indexOf("Tiempo agotado") !== -1) inputEl.placeholder = "Flag";
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("btn-danger", "disabled");
+          submitBtn.classList.add("btn-outline-secondary");
+        }
+        if (submitLbl && submitLbl.textContent.indexOf("Cerrado") !== -1) {
+          submitLbl.textContent = "Enviar";
+        }
+      }
     }
 
-    window.ctfAdminControlTimer = async function (challengeId, startNow) {
-      const root = (window.init && window.init.urlRoot) ? window.init.urlRoot : "";
-      const csrf = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : "";
-      try {
-        const probe = await fetch(root + "/api/v1/challenges/" + challengeId, {
-          credentials: "same-origin",
-          cache: "no-store"
-        });
-        syncClockFromHeader(probe);
-      } catch (e) { }
-
-      // Subtract 2000ms from server UTC clock so scheduled_at <= datetime.utcnow() is ALWAYS true on the server
-      const safeServerIso = new Date(getServerNowMs() - 2000).toISOString();
-      const payload = startNow
-        ? { state: "visible", scheduled_at: safeServerIso }
-        : { scheduled_at: null };
-
-      try {
-        const res = await fetch(root + "/api/v1/challenges/" + challengeId, {
-          method: "PATCH",
-          credentials: "same-origin",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "CSRF-Token": csrf
-          },
-          body: JSON.stringify(payload)
-        });
-        syncClockFromHeader(res);
-        if (res.ok) {
-          await syncAllTimersFromServer();
-        }
-      } catch (err) {
-        console.error("Error updating challenge timer:", err);
+    // 2. Update all card badges on /challenges board
+    const badges = document.querySelectorAll(".ctf-card-timer-badge[data-chal-id]");
+    badges.forEach(badge => {
+      const cid = Number(badge.getAttribute("data-chal-id"));
+      const st = getRemainingForId(cid);
+      if (!st.active) {
+        badge.className = "badge font-monospace bg-secondary opacity-75 ctf-card-timer-badge";
+        badge.textContent = "⏸️ 20:00 (Sin iniciar)";
+      } else if (st.expired) {
+        badge.className = "badge font-monospace bg-danger ctf-card-timer-badge";
+        badge.textContent = "🔒 00:00 (Cerrado)";
+      } else {
+        const isWarn = st.rem <= 300;
+        badge.className = "badge font-monospace ctf-card-timer-badge " + (isWarn ? "bg-warning text-dark" : "bg-success");
+        badge.textContent = "⏱️ " + formatMMSS(st.rem);
       }
-    };
+    });
+  }
 
-    // Guard flag submission in capture phase if timer is expired
-    document.addEventListener("click", function (e) {
-      const btn = e.target.closest ? e.target.closest("#challenge-submit") : null;
-      if (!btn) return;
-      const idEl = document.getElementById("challenge-id");
-      if (!idEl) return;
-      const st = getRemainingForId(Number(idEl.value));
-      if (st.active && st.expired) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+  window.ctfAdminControlTimer = async function (challengeId, startNow) {
+    const root = (window.init && window.init.urlRoot) ? window.init.urlRoot : "";
+    const csrf = (window.init && window.init.csrfNonce) ? window.init.csrfNonce : "";
+    try {
+      const probe = await fetch(root + "/api/v1/challenges/" + challengeId, {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      syncClockFromHeader(probe);
+    } catch (e) { }
+
+    // Subtract 2000ms from server UTC clock so scheduled_at <= datetime.utcnow() is ALWAYS true on the server
+    const safeServerIso = new Date(getServerNowMs() - 2000).toISOString();
+    const payload = startNow
+      ? { state: "visible", scheduled_at: safeServerIso }
+      : { scheduled_at: null };
+
+    try {
+      const res = await fetch(root + "/api/v1/challenges/" + challengeId, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "CSRF-Token": csrf
+        },
+        body: JSON.stringify(payload)
+      });
+      syncClockFromHeader(res);
+      if (res.ok) {
+        updateEntryFromRemaining(challengeId, Boolean(startNow), startNow ? DURATION_SEC : null);
+        tickUI();
+        await syncAllTimersFromServer();
       }
-    }, true);
+    } catch (err) {
+      console.error("Error updating challenge timer:", err);
+    }
+  };
 
-    document.addEventListener("keydown", function (e) {
-      if (e.key !== "Enter") return;
-      const inp = e.target.closest ? e.target.closest("#challenge-input") : null;
-      if (!inp) return;
-      const idEl = document.getElementById("challenge-id");
-      if (!idEl) return;
-      const st = getRemainingForId(Number(idEl.value));
-      if (st.active && st.expired) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-    }, true);
+  // Guard flag submission in capture phase if timer is expired
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest ? e.target.closest("#challenge-submit") : null;
+    if (!btn) return;
+    const idEl = document.getElementById("challenge-id");
+    if (!idEl) return;
+    const st = getRemainingForId(Number(idEl.value));
+    if (st.active && st.expired) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
 
-    syncAllTimersFromServer();
-    setInterval(tickUI, 500);
-    setInterval(syncAllTimersFromServer, 3000);
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    const inp = e.target.closest ? e.target.closest("#challenge-input") : null;
+    if (!inp) return;
+    const idEl = document.getElementById("challenge-id");
+    if (!idEl) return;
+    const st = getRemainingForId(Number(idEl.value));
+    if (st.active && st.expired) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  syncAllTimersFromServer();
+  setInterval(tickUI, 500);
+  setInterval(syncAllTimersFromServer, 3000);
   }) ();
 </script>
 {% endblock %}
