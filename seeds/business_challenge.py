@@ -79,32 +79,21 @@ FLAG_DATA    = ""         # "" = case-sensitive | "case_insensitive"
 # Pistas opcionales
 HINTS = [
     {
-        "title":   "Pista 1 — Lee los Estatutos Fundacionales de 1976",
+        "title":   "Pista 1",
         "content": (
-            "Fíjate en las 3 reglas del **Panel 1**: necesitas ser **Coordinador Jefe**, "
-            "y el **Artículo 2** dice que si te trasladas a un comité que tenga **0 miembros**, "
-            "te ascienden automáticamente a Coordinador Jefe. Mira la tabla de comités del **Panel 2**: "
-            "¿ves alguno con 0 miembros? Solo necesitas juntar **100 InnoCoins** para pagar la tasa de traslado."
-        ),
-        "cost":    0,    # gratis
-    },
-    {
-        "title":   "Pista 2 — ¿Cómo fabricar InnoCoins en el Panel 3?",
-        "content": (
-            "En el **Panel 3 (Programa de Compañerismo)**, cada vez que envías 10 InnoCoins o más a un "
-            "organizador, el patrocinador le regala **+20 InnoCoins extra** al destinatario. "
-            "¿Has comprobado si el formulario impide que pongas **tu propio nombre de usuario (`auxiliar_sillas`)** como destinatario?"
+            "En el Panel 3 (Programa de Compañerismo), cada vez que envías 10 InnoCoins o más a un organizador, "
+            "el patrocinador le regala +20 InnoCoins extra al destinatario."
+            "No te mires los pies, piensa fuerte."
         ),
         "cost":    25,   # cuesta 25 puntos
     },
     {
-        "title":   "Pista 3 — Solución paso a paso",
+        "title":   "Pista 2",
         "content": (
-            "1. En el **Panel 3**, escribe `auxiliar_sillas` en el campo **Destinatario** y envía `10` InnoCoins. "
-            "Te restarán 10, pero recibirás 10 + 20 de bono = ¡ganas +20 InnoCoins limpios por clic! Repítelo 5 veces hasta superar los 100 InnoCoins.\n"
-            "2. En el **Panel 2**, paga los 100 InnoCoins para trasladarte al **Comité de Mantenimiento del Mainframe de 1976 (0 miembros)**. "
-            "Al estar vacío, serás ascendido automáticamente a **Coordinador Jefe**.\n"
-            "3. En el **Panel 1**, pulsa el botón desbloqueado **Aprobar y Desclasificar Dossier** para obtener la flag."
+            "Escribe auxiliar_sillas en el campo Destinatario y envía 10 InnoCoins. Te restarán 10, "
+            "pero recibirás 10 + 20 de bono = ¡ganas +20 InnoCoins limpios por clic! Repítelo 5 veces hasta superar los 100 InnoCoins."
+            "Ten en cuenta que puedes pagar 100 InnoCoins para trasladarte a otro comité. "
+            "¿Has comprobado el número de miembros de todos los comités?"
         ),
         "cost":    50,
     },

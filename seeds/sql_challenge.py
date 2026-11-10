@@ -85,17 +85,7 @@ FLAG_DATA    = ""         # "" = case-sensitive | "case_insensitive"
 # Pistas opcionales
 HINTS = [
     {
-        "title":   "Pista 1 — Los botones de ejemplo y el Post-it",
-        "content": (
-            "Observa en la consola qué consultas ejecutan los **3 botones de búsqueda rápida** (especialmente cómo funciona "
-            "`UNION SELECT col1, col2 FROM tabla` en el Botón 2 y el comentario `--` en el Botón 3). "
-            "Luego lee el **Post-it amarillo**: la tabla secreta se llama `capsula_1976`, pero para averiguar cómo se llaman "
-            "sus columnas tendrás que consultar antes la tabla del sistema `sqlite_master`."
-        ),
-        "cost":    0,    # gratis
-    },
-    {
-        "title":   "Pista 2 — Paso 1: Descubrir las columnas con sqlite_master",
+        "title":   "Pista 1",
         "content": (
             "Como indica el Post-it, en SQLite la tabla `sqlite_master` guarda el nombre de cada tabla (`tbl_name`) "
             "y su sentencia de creación (`sql`). Inyecta esto en el buscador para ver la estructura de `capsula_1976`:\n"
@@ -103,10 +93,10 @@ HINTS = [
             "' UNION SELECT tbl_name, sql FROM sqlite_master --\n"
             "```"
         ),
-        "cost":    25,   # cuesta 25 puntos
+        "cost":    50,
     },
     {
-        "title":   "Pista 3 — Paso 2: Extraer la flag de capsula_1976",
+        "title":   "Pista 2",
         "content": (
             "Tras ver en `sqlite_master` que `capsula_1976` tiene las columnas `codigo_secreto` y `contenido_flag`, "
             "lanza el volcado final en el buscador:\n"

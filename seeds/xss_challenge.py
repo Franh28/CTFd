@@ -78,32 +78,27 @@ FLAG_DATA    = ""         # "" = case-sensitive | "case_insensitive"
 # Pistas opcionales
 HINTS = [
     {
-        "title":   "Pista 1 — Cómo burlar el filtro que borra <script> una sola vez",
+        "title":   "Pista 1",
         "content": (
-            "Fíjate en el **Monitor en Vivo** debajo del cuadro de reclamación: el filtro de Don Severo "
-            "busca `<script>` y lo borra **una sola vez**. ¿Qué pasa si escribes `<scr<script>ipt>`? "
-            "Al borrarse el `<script>` del centro, las dos mitades de los lados se juntan y sobrevive `<script>`. "
-            "Haz lo mismo para la etiqueta de cierre: `</scr</script>ipt>`."
-        ),
-        "cost":    0,    # gratis
-    },
-    {
-        "title":   "Pista 2 — Qué comando JavaScript poner dentro",
-        "content": (
-            "No necesitas saber programar en JavaScript. Mira el recuadro de la derecha "
-            "(**Macro de Accesibilidad de Don Severo**): ahí ves que para pulsar un botón automáticamente usa:\n"
-            "`document.getElementById('boton-denegar').click()`\n"
-            "Inspecciona el Botón Dorado en el navegador para ver su ID (`'comprar-soborno-al-profesor-btn'`) y úsalo en la función."
+            "El profesor tiene abierto un proceso de solicitud de lloros para reclamar una subida de nota."
+            "¿Has probado a enviar uno? Quizás valore tu creatividad para subirte unos puntos en el examen"
         ),
         "cost":    25,   # cuesta 25 puntos
     },
     {
-        "title":   "Pista 3 — El payload exacto",
+        "title":   "Pista 2",
         "content": (
-            "Escribe exactamente esto en el buzón de reclamación y pulsa **Enviar Lloro a Don Severo**:\n"
-            "```html\n"
-            "<scr<script>ipt>document.getElementById('comprar-soborno-al-profesor-btn').click()</scr</script>ipt>\n"
-            "```"
+            "El profesor ha desarrollado con cortafuegos que impide el uso de cierto tipo de palabras."
+            "¿Has probado a intentar maquillarlas de alguna manera?"
+        ),
+        "cost":    25,
+    },
+    {
+        "title":   "Pista 3",
+        "content": (
+            "Hay un ejemplo de cómo funciona un botón con código javascript."
+            "Quizás si compruebas el nombre que tiene el id del botón (Ctrl+derecho, Inspeccionar), "
+            "puedas crear un script con un contenido parecido al del botón."
         ),
         "cost":    50,
     },
