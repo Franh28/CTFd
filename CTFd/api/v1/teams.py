@@ -168,6 +168,10 @@ class TeamList(Resource):
         db.session.add(response.data)
         db.session.commit()
 
+        # Otorgar 100 puntos iniciales de saldo de bienvenida al nuevo equipo
+        from CTFd.utils.scores import grant_initial_team_award
+        grant_initial_team_award(response.data, points=100)
+
         response = schema.dump(response.data)
         db.session.close()
 
