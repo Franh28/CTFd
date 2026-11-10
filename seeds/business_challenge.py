@@ -244,11 +244,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     background: rgba(245,158,11,0.14);
     font-size: 1.05rem;
   }
-  .gala-stat-rank.is-boss strong {
-    color: #4ade80 !important;
-    border: 1px solid #22c55e;
-    background: rgba(34,197,94,0.18);
-  }
   .gala-btn-reset {
     background: transparent;
     border: 1px solid #4b5563;
@@ -338,12 +333,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     color: #fca5a5;
     transition: all 0.2s;
   }
-  .gala-btn-vault.unlocked {
-    border-color: #10b981;
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: #052e16;
-    box-shadow: 0 0 25px rgba(16,185,129,0.4);
-  }
   .gala-btn-vault:hover {
     transform: translateY(-1px);
   }
@@ -393,16 +382,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     padding: 11px 12px;
     border-bottom: 1px solid #1f2937;
     color: #e5e7eb;
-  }
-  .gala-vacant-badge {
-    display: inline-block;
-    background: rgba(239,68,68,0.2);
-    border: 1px solid #ef4444;
-    color: #fca5a5;
-    font-weight: 700;
-    font-size: 0.75rem;
-    padding: 2px 7px;
-    border-radius: 999px;
   }
   .gala-current-badge {
     display: inline-block;
@@ -637,7 +616,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
           </p>
         </div>
         <button type="button" id="gala-btn-vault" class="gala-btn-vault">
-          🔒 APROBAR Y DESCLASIFICAR DOSSIER (Bloqueado)
+          🔒 APROBAR Y DESCLASIFICAR DOSSIER
         </button>
       </div>
 
@@ -645,8 +624,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         <h4>📜 Normativa Fundacional de Comités de InnoSoft (Estatutos de 1976)</h4>
         <ul>
           <li><strong>Artículo 1 (Jerarquía):</strong> Solo un organizador con rango <code>Coordinador Jefe de Comité</code> tiene permisos para aprobar y leer el Dossier Confidencial del 50º Aniversario.</li>
-          <li><strong>Artículo 2 (Cláusula de Continuidad Histórica de 1976):</strong> Si un Comité Oficial se queda con <strong><code>0 miembros activos</code></strong>, el primer voluntario que se traslade a dicho comité será ascendido automáticamente a <strong><code>Coordinador Jefe de Comité</code></strong> para evitar que el comité desaparezca.</li>
-          <li><strong>Artículo 3 (Tasa Anti-Chaquetazos):</strong> Para evitar que todo el mundo abandone el montaje de sillas para irse al comité de croquetas, solicitar un traslado de comité cuesta <strong><code>100 InnoCoins</code></strong> en gastos de gestión.</li>
+          <li><strong>Artículo 2 (Tasa Anti-Chaquetazos):</strong> Para evitar que todo el mundo abandone el montaje de sillas para irse al comité de croquetas, solicitar un traslado de comité cuesta <strong><code>100 InnoCoins</code></strong> en gastos de gestión.</li>
         </ul>
       </div>
     </div>
@@ -657,8 +635,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         <span>🏢 Panel 2: Gestión de Traslados entre Comités</span>
         <span class="gala-step-tag">Coste: 100 InnoCoins</span>
       </div>
-
-      <div id="gala-transfer-toast" class="gala-toast"></div>
 
       <table class="gala-table">
         <thead>
@@ -722,11 +698,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
         </button>
       </form>
 
-      <div class="gala-log-box" id="gala-log-box">
-        <div class="gala-log-entry" style="color:#9ca3af;">
-          📋 <strong>Registro contable de InnoSoft:</strong> Tienes <code>10 InnoCoins</code> de beca inicial. Esperando operaciones...
-        </div>
-      </div>
+      <div class="gala-log-box" id="gala-log-box" style="display:none;"></div>
     </div>
   </div>
 </div>
@@ -758,7 +730,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   const uiCoins = document.getElementById("gala-ui-coins");
   const uiCommittee = document.getElementById("gala-ui-committee");
   const uiRank = document.getElementById("gala-ui-rank");
-  const uiRankWrap = document.getElementById("gala-ui-rank-wrap");
   const committeesBody = document.getElementById("gala-committees-body");
   const logBox = document.getElementById("gala-log-box");
   const recipientInput = document.getElementById("gala-recipient-input");
@@ -767,16 +738,13 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   const btnVault = document.getElementById("gala-btn-vault");
   const vaultStatusText = document.getElementById("gala-vault-status-text");
   const vaultToast = document.getElementById("gala-vault-toast");
-  const transferToast = document.getElementById("gala-transfer-toast");
   const flagBanner = document.getElementById("gala-flag-banner");
   const flagCode = document.getElementById("gala-flag-code");
   const btnReset = document.getElementById("gala-btn-reset");
 
   function addLog(htmlMsg) {
-    const div = document.createElement("div");
-    div.className = "gala-log-entry";
-    div.innerHTML = htmlMsg;
-    logBox.prepend(div);
+    logBox.style.display = "block";
+    logBox.innerHTML = `<div class="gala-log-entry">${htmlMsg}</div>`;
   }
 
   function showToast(el, type, htmlMsg) {
@@ -791,35 +759,21 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     uiCommittee.textContent = currentComm ? currentComm.name : "";
 
     if (state.isBoss) {
-      uiRank.textContent = "👑 Coordinador Jefe de Comité";
-      uiRankWrap.classList.add("is-boss");
-      btnVault.classList.add("unlocked");
-      btnVault.textContent = "🔓 APROBAR Y DESCLASIFICAR DOSSIER (Firmar como Coordinador Jefe)";
-      vaultStatusText.innerHTML =
-        `✅ <strong>Estado:</strong> ¡Autorización disponible! Tu rango actual es <code>Coordinador Jefe de Comité</code>.`;
+      uiRank.textContent = "Coordinador Jefe de Comité";
     } else {
       uiRank.textContent = "Pringado Nivel 1 (Auxiliar)";
-      uiRankWrap.classList.remove("is-boss");
-      btnVault.classList.remove("unlocked");
-      btnVault.textContent = "🔒 APROBAR Y DESCLASIFICAR DOSSIER (Bloqueado)";
-      vaultStatusText.innerHTML =
-        `🔒 <strong>Estado:</strong> Clasificado — Requiere firma digital de un usuario con rango <code>Coordinador Jefe de Comité</code>.`;
     }
 
     committeesBody.innerHTML = state.committees.map(c => {
       const isCurrent = (c.id === state.committeeId);
-      const membersHtml = c.members === 0
-        ? `<span class="gala-vacant-badge">⚠️ 0 miembros (VACANTE)</span>`
-        : `${c.members} miembros`;
-      const bossHtml = c.boss
-        ? `<code>${c.boss}</code>`
-        : `<em style="color:#f87171;">Nadie (Vacante desde 1984)</em>`;
+      const membersHtml = `${c.members} miembros`;
+      const bossHtml = `<code>${c.boss || "—"}</code>`;
 
       let actionHtml = "";
       if (isCurrent) {
         actionHtml = `<span class="gala-current-badge">📍 Tu comité actual</span>`;
       } else {
-        actionHtml = `<button type="button" class="gala-btn-transfer" data-comm="${c.id}">
+        actionHtml = `<button type="button" class="gala-btn-transfer" data-comm="${c.id}"${state.coins < 100 ? " disabled" : ""}>
           Solicitar Traslado (100 IC)
         </button>`;
       }
@@ -842,14 +796,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     const targetComm = state.committees.find(c => c.id === targetId);
     if (!targetComm) return;
 
-    if (state.coins < 100) {
-      showToast(
-        transferToast,
-        "error",
-        `❌ <strong>Fondos insuficientes:</strong> La tasa anti-chaquetazos (Artículo 3) cuesta <strong>100 InnoCoins</strong> y solo tienes <strong>${state.coins} InnoCoins</strong>. ¡Busca cómo conseguir más fondos en el Panel 3!`
-      );
-      return;
-    }
+    if (state.coins < 100) return;
 
     // Restar tasa de 100 InnoCoins y actualizar miembros
     const oldComm = state.committees.find(c => c.id === state.committeeId);
@@ -866,24 +813,8 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     if (wasEmpty) {
       targetComm.boss = MY_USERNAME;
       state.isBoss = true;
-      showToast(
-        transferToast,
-        "success",
-        `🎉 <strong>¡CLÁUSULA DE 1976 ACTIVADA (Artículo 2)!</strong> Como el <em>${targetComm.name}</em> tenía <strong>0 miembros</strong>, ¡has sido ascendido automáticamente a <strong>Coordinador Jefe de Comité</strong>! Ve al <strong>Panel 1</strong> para abrir la Bóveda.`
-      );
-      addLog(
-        `👑 <strong>ASCENSO HISTÓRICO:</strong> Te has trasladado al <em>${targetComm.name}</em> (0 miembros) por 100 IC y has asumido el cargo de <strong>Coordinador Jefe</strong>.`
-      );
     } else {
       state.isBoss = false;
-      showToast(
-        transferToast,
-        "error",
-        `ℹ️ Te has trasladado al <strong>${targetComm.name}</strong> pagando 100 IC, pero como ya tenía miembros y su jefe es <code>${targetComm.boss}</code>, sigues siendo <em>Pringado Nivel 1</em>. (Pista: lee el Artículo 2 y busca un comité con 0 miembros).`
-      );
-      addLog(
-        `🏢 Traslado completado a <em>${targetComm.name}</em> (-100 IC). Sigues siendo auxiliar raso.`
-      );
     }
 
     renderUI();
@@ -897,7 +828,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     if (!recipient) return;
 
     if (isNaN(amount) || amount < 10) {
-      addLog(`⚠️ <span style="color:#fca5a5;">Error: La transferencia mínima para acogerse a la promoción del 50º Aniversario es de <strong>10 InnoCoins</strong>.</span>`);
       return;
     }
 
@@ -909,24 +839,17 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       return;
     }
 
+    logBox.innerHTML = "";
+    logBox.style.display = "none";
+
     // Vulnerabilidad de lógica de negocio: permite que el remitente sea igual al destinatario (auxiliar_sillas)
     if (recipient === MY_USERNAME) {
       state.coins = state.coins - amount + amount + 20;
-      addLog(
-        `🤑 <span style="color:#4ade80;"><strong>¡VACÍO LEGAL EXPLOTADO!</strong> <code>${MY_USERNAME}</code> ha enviado ${amount} IC a <code>${MY_USERNAME}</code>. ` +
-        `Te restan ${amount} IC, te llegan tus ${amount} IC de vuelta + <strong>20 IC de subvención del patrocinador</strong>. ` +
-        `¡Nuevo saldo: <strong>${state.coins} InnoCoins</strong>!</span>`
-      );
     } else {
       state.coins -= amount;
-      addLog(
-        `💸 Has enviado <strong>${amount} IC</strong> a <code>${recipient}</code> (recibe ${amount + 20} IC con el bono). ` +
-        `Tu saldo baja a <strong>${state.coins} InnoCoins</strong>.` +
-        (state.coins < 10
-          ? `<br>💡 <em>¡Ups! Te has quedado sin tus 10 IC para operar. Pulsa <strong>«🔄 Reiniciar Partida»</strong> arriba a la derecha y piensa a quién podrías enviarle el dinero para quedarte tú la subvención...</em>`
-          : "")
-      );
     }
+
+    addLog(`💸 Has enviado <strong>${amount} InnoCoins</strong>.`);
 
     renderUI();
   });
@@ -942,8 +865,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       showToast(
         vaultToast,
         "error",
-        `⛔ <strong>Acceso Denegado (Artículo 1):</strong> Tus credenciales de <code>Pringado Nivel 1</code> no sirven aquí. ` +
-        `Necesitas ascender a <strong>Coordinador Jefe de Comité</strong> cumpliendo la condición del <strong>Artículo 2</strong>.`
+        `⛔ <strong>Acceso Denegado (Artículo 1):</strong> Tus credenciales de <code>Pringado Nivel 1</code> no sirven aquí.`
       );
       return;
     }
@@ -967,14 +889,11 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       committees: JSON.parse(JSON.stringify(INITIAL_COMMITTEES))
     };
     vaultToast.style.display = "none";
-    transferToast.style.display = "none";
     flagBanner.style.display = "none";
     recipientInput.value = "";
     amountInput.value = "10";
-    logBox.innerHTML = `
-      <div class="gala-log-entry" style="color:#9ca3af;">
-        🔄 <strong>Partida reiniciada:</strong> Vuelves a tener tus <code>10 InnoCoins</code> iniciales como <code>auxiliar_sillas</code>.
-      </div>`;
+    logBox.innerHTML = "";
+    logBox.style.display = "none";
     renderUI();
   });
 
