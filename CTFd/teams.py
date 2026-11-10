@@ -327,6 +327,10 @@ def new():
         user.team_id = team.id
         db.session.commit()
 
+        # Otorgar 100 puntos iniciales de saldo de bienvenida al nuevo equipo
+        from CTFd.utils.scores import grant_initial_team_award
+        grant_initial_team_award(team, points=100)
+
         clear_user_session(user_id=user.id)
         clear_team_session(team_id=team.id)
 

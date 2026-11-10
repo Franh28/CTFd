@@ -851,6 +851,21 @@ class Teams(db.Model):
         score = 0
         for member in self.members:
             score += member.get_score(admin=admin)
+
+        team_awards_query = db.session.query(db.func.sum(Awards.value)).filter(
+            Awards.team_id == self.id,
+            Awards.user_id == None,
+        )
+        if not admin:
+            freeze = Configs.query.filter_by(key="freeze").first()
+            if freeze and freeze.value:
+                freeze_dt = datetime.datetime.utcfromtimestamp(int(freeze.value))
+                team_awards_query = team_awards_query.filter(Awards.date < freeze_dt)
+
+        team_awards = team_awards_query.first()[0]
+        if team_awards:
+            score += int(team_awards)
+
         return score
 
     @cache.memoize()

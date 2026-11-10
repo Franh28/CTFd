@@ -331,3 +331,38 @@ def get_user_standings(count=None, bracket_id=None, admin=False, fields=None):
         standings = standings_query.limit(count).all()
 
     return standings
+
+
+def grant_initial_team_award(team, points=100):
+    """
+    Otorga a un equipo recién creado sus 100 puntos iniciales de bienvenida.
+    """
+    from CTFd.cache import clear_standings
+
+    if not team or not getattr(team, "id", None):
+        return None
+
+    existing = Awards.query.filter_by(
+        team_id=team.id,
+        name="Saldo Inicial",
+    ).first()
+    if existing:
+        return existing
+
+    captain_id = getattr(team, "captain_id", None)
+    if captain_id is None and getattr(team, "members", None):
+        captain_id = team.members[0].id
+
+    award = Awards(
+        team_id=team.id,
+        user_id=captain_id,
+        name="Saldo Inicial",
+        description="Saldo inicial de 100 puntos para pistas y actividades",
+        value=points,
+        category="welcome",
+    )
+    db.session.add(award)
+    db.session.commit()
+    clear_standings()
+    return award
+
