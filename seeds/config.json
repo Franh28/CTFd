@@ -1,21 +1,17 @@
 {
   "_comment": "Configuración de retos. enabled=true los inserta al arrancar Docker. state=visible|hidden controla si los participantes los ven.",
   "challenges": {
-    "sqli_login": {
-      "enabled": true,
-      "state": "visible"
-    },
     "sql_challenge": {
       "enabled": true,
-      "state": "visible"
+      "state": "hidden"
     },
     "business_challenge": {
       "enabled": true,
-      "state": "visible"
+      "state": "hidden"
     },
     "xss_challenge": {
       "enabled": true,
-      "state": "visible"
+      "state": "hidden"
     }
   }
 }
