@@ -61,10 +61,10 @@ Bienvenido al **Portal Automatizado de Lloros y Revisiones v1.976** del ilustrí
 
 Don Severo lleva dando clase en la escuela desde que se inauguraron los estudios de Informática en **1976** (cuando los exámenes se compilaban a ojo mirando al trasluz agujeros en tarjetas perforadas). Te ha dejado la asignatura en un **4.99** y, para colmo, se niega a daros libre para ir a las charlas de las **Jornadas InnoSoft** porque dice que *«las conferencias modernas ablandan el carácter»*.
 
-En la parte superior de su portal hay un **Botón Dorado de Aprobado General (`id="boton-aprobar"`)**, pero está bloqueado para alumnos y solo responde si lo pulsa el navegador de Don Severo.
+En la parte superior de su portal hay un **Botón Dorado de Aprobado General**, pero está bloqueado para alumnos y solo responde si lo pulsa el navegador de Don Severo.
 
 ### 🎯 Objetivo
-Burla el filtro "Anti-Listillos" del buzón de reclamaciones e inyecta un script para que, cuando Don Severo abra tu mensaje en su ordenador, su propio navegador haga clic automáticamente en el botón dorado.
+Burla el filtro "Anti-Listillos" del buzón de reclamaciones.
 
 ### 🌐 Acceso al reto
 👉 **[👨‍🏫 Abrir el Portal de Revisión de Don Severo (/don-severo)](/don-severo)**
@@ -93,7 +93,7 @@ HINTS = [
             "No necesitas saber programar en JavaScript. Mira el recuadro de la derecha "
             "(**Macro de Accesibilidad de Don Severo**): ahí ves que para pulsar un botón automáticamente usa:\n"
             "`document.getElementById('boton-denegar').click()`\n"
-            "Cámbialo por el ID del Botón Dorado (`'boton-aprobar'`)."
+            "Inspecciona el Botón Dorado en el navegador para ver su ID (`'comprar-soborno-al-profesor-btn'`) y úsalo en la función."
         ),
         "cost":    25,   # cuesta 25 puntos
     },
@@ -102,7 +102,7 @@ HINTS = [
         "content": (
             "Escribe exactamente esto en el buzón de reclamación y pulsa **Enviar Lloro a Don Severo**:\n"
             "```html\n"
-            "<scr<script>ipt>document.getElementById('boton-aprobar').click()</scr</script>ipt>\n"
+            "<scr<script>ipt>document.getElementById('comprar-soborno-al-profesor-btn').click()</scr</script>ipt>\n"
             "```"
         ),
         "cost":    50,
@@ -117,7 +117,9 @@ SOLUTION = """\
 ## Solución — El 4.99 de Don Severo (XSS + Bypass de Filtro No Recursivo)
 
 ### 1. Análisis del problema
-Necesitamos que el navegador de `Don_Severo` haga clic en el botón con `id="boton-aprobar"` cuando lea nuestra reclamación.
+Necesitamos que el navegador de `Don_Severo` haga clic en el botón dorado cuando lea nuestra reclamación.
+Inspeccionando el elemento en el navegador (DevTools), vemos que su ID es: `comprar-soborno-al-profesor-btn`.
+
 En la propia interfaz tenemos dos ayudas clave:
 1. **La Macro de Accesibilidad de Don Severo** nos muestra la sintaxis exacta en JavaScript para pulsar un botón por su ID:
    ```javascript
@@ -125,19 +127,19 @@ En la propia interfaz tenemos dos ayudas clave:
    ```
    Por tanto, para pulsar el botón dorado necesitamos ejecutar:
    ```javascript
-   document.getElementById('boton-aprobar').click()
+   document.getElementById('comprar-soborno-al-profesor-btn).click()
    ```
 2. **El Cortafuegos Artesanal de 1998** elimina `<script>` y `</script>` **una sola vez** (reemplazo no recursivo).
 
 ### 2. Construcción del Payload (Anidamiento de etiquetas)
 Anidamos `<script>` dentro de sí mismo (`<scr<script>ipt>`) y hacemos lo mismo con el cierre (`</scr</script>ipt>`):
 ```html
-<scr<script>ipt>document.getElementById('boton-aprobar').click()</scr</script>ipt>
+<scr<script>ipt>document.getElementById('comprar-soborno-al-profesor-btn').click()</scr</script>ipt>
 ```
 
 Al pasar por el filtro de Don Severo, se eliminan las etiquetas centrales y el mensaje resultante que ejecuta el navegador del profesor es:
 ```html
-<script>document.getElementById('boton-aprobar').click()</script>
+<script>document.getElementById('comprar-soborno-al-profesor-btn').click()</script>
 ```
 
 ### 3. Flag obtenida
@@ -567,8 +569,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     <p class="severo-story">
       <strong>Don Severo</strong> lleva dando clase desde que se fundaron los estudios de Informática en <strong>1976</strong>
       (él compilaba código mirando al trasluz agujeros en tarjetas perforadas). Te ha puesto un <strong>4.99</strong> y dice
-      que no piensa dar libre para ir a las charlas de <strong>InnoSoft</strong>. Tu única opción es colarle un script en tu
-      reclamación para que, cuando él la lea, su propio navegador pulse el <strong>Botón Dorado de Aprobado General</strong>.
+      que no piensa dar libre para ir a las charlas de <strong>InnoSoft</strong>.
     </p>
     <div id="ctf-server-timer-box" style="margin-top:14px; padding:10px 16px; border-radius:10px; background:rgba(15,23,42,0.92); border:1px solid #334155; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
       <span id="ctf-server-timer-label" style="font-weight:700; color:#e2e8f0; font-size:0.92rem;">⏱️ Sincronizando cronómetro del reto con el servidor...</span>
@@ -583,12 +584,9 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       <span id="severo-grade-display" class="severo-grade-val">NOTA ACTUAL: 4.99 (SUSPENSO — SIN PERMISO PARA INNOSOFT)</span>
     </div>
     <div class="severo-gold-btn-wrap">
-      <button type="button" id="boton-aprobar" class="severo-btn-gold">
+      <button type="button" id="comprar-soborno-al-profesor-btn" class="severo-btn-gold">
         🏆 APROBAR A TODOS CON 10 Y DAR DÍA LIBRE PARA INNOSOFT
       </button>
-      <div class="severo-id-tag">
-        ID técnico del botón en el HTML: <code>id="boton-aprobar"</code>
-      </div>
     </div>
   </div>
 
@@ -597,7 +595,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   <!-- Banner de Flag (oculto hasta que Don Severo pulse el botón) -->
   <div id="severo-flag-banner" class="severo-flag-banner">
     <h2>🎉 ¡ACTA FIRMADA POR EL NAVEGADOR DE DON SEVERO! 🎉</h2>
-    <p>Tu XSS ha obligado a la sesión de Don Severo a pulsar <code>#boton-aprobar</code>. ¡Tienes un 10 y vía libre para InnoSoft!</p>
+    <p>Tu XSS ha obligado a la sesión de Don Severo a pulsar el Botón Dorado de Aprobado General. ¡Tienes un 10 y vía libre para InnoSoft!</p>
     <div id="severo-flag-code" class="severo-flag-code"></div>
   </div>
 
@@ -621,14 +619,9 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
       <!-- Escudo Anti-Listillos con Monitor en Vivo -->
       <div class="severo-waf-box">
         <div class="severo-waf-header">🛡️ Cortafuegos Artesanal de Don Severo (Programado en 1998)</div>
-        <p class="severo-waf-desc">
-          <em>«En el InnoSoft del año pasado un alumno me coló la etiqueta <code>&lt;script&gt;</code> en una reclamación.
-          Ahora mi filtro pasa las etiquetas a minúsculas y ejecuta <code>texto.replace("&lt;script&gt;", "")</code> y
-          <code>texto.replace("&lt;/script&gt;", "")</code> <strong>una sola vez</strong> antes de enseñármelo. ¡Jaque mate!»</em>
-        </p>
 
         <div class="severo-preview-label">
-          <span>🔎 MONITOR EN VIVO — Así quedará tu mensaje tras pasar por el filtro:</span>
+          <span>🔎 MONITOR EN VIVO</span>
           <span style="color:#22c55e; font-weight:bold;">● TIEMPO REAL</span>
         </div>
         <div id="severo-preview-output" class="severo-preview-output"></div>
@@ -672,9 +665,6 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
           Comando JavaScript que utiliza el navegador para hacer clic en un botón por su ID:
         </div>
         <code class="severo-code-snippet">document.getElementById('boton-denegar').click()</code>
-        <div style="font-size:0.8rem; color:#fde047; margin-top:6px;">
-          💡 <strong>Pista visual:</strong> Fíjate en cómo ese código pulsa el botón <code>'boton-denegar'</code>... ¿Cómo se llamaba el ID del <strong>Botón Dorado</strong> de arriba?
-        </div>
       </div>
     </div>
   </div>
@@ -689,8 +679,9 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
   }
 
   let isDonSeveroSession = false;
+  let denyTriggered = false;
 
-  const btnGold = document.getElementById("boton-aprobar");
+  const btnGold = document.getElementById("comprar-soborno-al-profesor-btn");
   const btnDeny = document.getElementById("boton-denegar");
   const gradeDisplay = document.getElementById("severo-grade-display");
   const topAlert = document.getElementById("severo-top-alert");
@@ -726,7 +717,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     const raw = claimInput.value;
     if (!raw) {
       previewOutput.innerHTML = `<span style="color:#64748b;">(Escribe algo arriba para ver cómo lo filtra Don Severo...)</span>`;
-      wafFeedback.innerHTML = `📝 <strong>Estado del filtro:</strong> Esperando texto. Recuerda que el filtro borra <code>&lt;script&gt;</code> y <code>&lt;/script&gt;</code> una sola vez.`;
+      wafFeedback.innerHTML = "";
       return;
     }
 
@@ -743,38 +734,22 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
     previewOutput.innerHTML = escapedFiltered || `<span style="color:#ef4444;">(El filtro ha borrado toda tu etiqueta y no ha quedado nada)</span>`;
 
     if (hasOpenScript && hasCloseScript) {
-      if (filtered.includes("boton-aprobar") && filtered.includes(".click()")) {
-        wafFeedback.innerHTML =
-          `🚀 <strong style="color:#4ade80;">¡PAYLOAD PERFECTO!</strong> Las etiquetas <code>&lt;script&gt;</code> y <code>&lt;/script&gt;</code> han sobrevivido al filtro y contienen la orden de pulsar <code>'boton-aprobar'</code>. ¡Pulsa <strong>«Enviar Lloro a Don Severo»</strong>!`;
-      } else {
-        wafFeedback.innerHTML =
-          `⚡ <strong style="color:#4ade80;">¡BURLASTE EL FILTRO!</strong> Las etiquetas <code>&lt;script&gt;...&lt;/script&gt;</code> han sobrevivido en verde. Ahora asegúrate de poner dentro el comando JS de la chuleta para pulsar <code>'boton-aprobar'</code>.`;
-      }
-    } else if (hasOpenScript && !hasCloseScript) {
+      wafFeedback.innerHTML = "";
+    } else if (/script/i.test(raw)) {
       wafFeedback.innerHTML =
-        `🧩 <strong>¡Mitad conseguida!</strong> Ha sobrevivido la apertura <code>&lt;script&gt;</code>, pero el filtro te ha borrado el cierre <code>&lt;/script&gt;</code>. ¡Usa el mismo truco de anidar para la etiqueta de cierre (<code>&lt;/scr&lt;/script&gt;ipt&gt;</code>)!`;
-    } else if (OPEN_SCRIPT_RE.test(raw)) {
-      if (raw !== raw.toLowerCase() && raw.includes("<SCRIPT>")) {
-        wafFeedback.innerHTML =
-          `⚠️ <strong>¡Casi!</strong> Has probado con mayúsculas, pero el filtro de Don Severo ignora mayúsculas/minúsculas y lo ha borrado una vez. Piensa: si borra <code>&lt;script&gt;</code> <strong>una sola vez</strong>, ¿qué pasa si metes un <code>&lt;script&gt;</code> <em>dentro</em> de otro (<code>&lt;scr&lt;script&gt;ipt&gt;</code>)?`;
-      } else {
-        wafFeedback.innerHTML =
-          `🛡️ <strong>¡Bloqueado!</strong> El filtro ha detectado tu <code>&lt;script&gt;</code> y lo ha borrado una vez. ¿Qué pasaría si escribes <code>&lt;scr&lt;script&gt;ipt&gt;</code> para que al borrar el del centro se junten los extremos?`;
-      }
+        `🛡️ <strong>Cortafuegos:</strong> El cortafuegos ha bloqueado tu mensaje por contener texto no permitido ('script').`;
     } else {
-      wafFeedback.innerHTML =
-        `💬 Texto normal sin etiquetas ejecutables. Don Severo leerá tu queja y te suspenderá igual.`;
+      wafFeedback.innerHTML = "";
     }
   }
 
-  // Click en el Botón Dorado (#boton-aprobar)
+  // Click en el Botón Dorado (#comprar-soborno-al-profesor-btn)
   btnGold.addEventListener("click", () => {
     if (!isDonSeveroSession) {
       topAlert.className = "severo-alert error";
       topAlert.innerHTML =
         `❌ <strong>¡Quieto ahí, milenial!</strong> Tus dedos de alumno no tienen permisos de Catedrático de 1976. ` +
-        `El botón <code>id="boton-aprobar"</code> ha detectado que el clic viene de tu ratón y no desde la sesión de <code>Don_Severo</code>. ` +
-        `¡Tienes que lograr que sea el navegador de Don Severo quien ejecute <code>document.getElementById('boton-aprobar').click()</code> al leer tu reclamación!`;
+        `El botón dorado solo responde si lo pulsa el propio navegador de <code>Don_Severo</code> al abrir tu reclamación.`;
       topAlert.style.display = "block";
       return;
     }
@@ -788,7 +763,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
 
     topAlert.className = "severo-alert success";
     topAlert.innerHTML =
-      `🏆 <strong>¡ EJECUCIÓN XSS EXITOSA !</strong> El navegador de <code>Don_Severo</code> ha ejecutado tu script y ha pulsado <code>#boton-aprobar</code>.`;
+      `🏆 <strong>¡ EJECUCIÓN XSS EXITOSA !</strong> El navegador de <code>Don_Severo</code> ha ejecutado tu script y ha firmado el acta.`;
     topAlert.style.display = "block";
 
     severoSpeech.innerHTML =
@@ -799,6 +774,7 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
 
   // Click en el botón de prueba de la chuleta (#boton-denegar)
   btnDeny.addEventListener("click", () => {
+    denyTriggered = true;
     severoSpeech.innerHTML =
       `👎 <strong>Macro de Don Severo ejecutada (<code>#boton-denegar</code>):</strong> <em>«Reclamación denegada automáticamente. ¡En 1976 programábamos en binario sin quejarnos!»</em>`;
   });
@@ -830,23 +806,27 @@ EMBEDDED_CHALLENGE_PAGE_HTML = r"""
 
     const jsCode = match[1].trim();
     isDonSeveroSession = true;
+    denyTriggered = false;
     try {
       // Ejecutamos el código inyectado en el contexto de la sesión de Don Severo
       const fn = new Function(jsCode);
       fn();
 
-      // Si ejecutó JS válido pero no pulsó #boton-aprobar:
-      if (flagBanner.style.display !== "block") {
-        severoSpeech.innerHTML =
-          `⚡ <strong style="color:#fde047;">¡Tu etiqueta <code>&lt;script&gt;</code> ha burlado el filtro y se ha ejecutado en el ordenador de Don Severo!</strong><br>` +
-          `Pero tu código (<code>${escapeHtml(jsCode)}</code>) no ha pulsado el botón <code>id="boton-aprobar"</code>. ` +
-          `Fíjate en la chuleta de abajo: usa <code>document.getElementById('boton-aprobar').click()</code>.`;
+      if (flagBanner.style.display === "block") {
+        return;
       }
+
+      if (denyTriggered) {
+        // Se ejecutó la macro de denegar (#boton-denegar)
+        return;
+      }
+
+      // Si ejecutó JS válido pero no pulsó ningún botón objetivo
+      severoSpeech.innerHTML =
+        `💬 <strong>Don Severo:</strong> <em>«He recibido tu reclamación... pero aquí no ha cambiado nada. ¡Sigues con tu 4.99!»</em>`;
     } catch (err) {
       severoSpeech.innerHTML =
-        `⚠️ <strong style="color:#f87171;">Tu <code>&lt;script&gt;</code> burló el filtro, pero dio un error de sintaxis en JavaScript:</strong><br>` +
-        `<code style="color:#fca5a5;">${escapeHtml(err.message)}</code><br>` +
-        `💡 Copia el comando de la chuleta de abajo cambiando <code>'boton-denegar'</code> por <code>'boton-aprobar'</code>.`;
+        `⚠️ <strong>Don Severo:</strong> <em>«¿Qué clase de galimatías has enviado? Ni siquiera se ejecuta. ¡Siguiente!»</em>`;
     } finally {
       isDonSeveroSession = false;
     }
