@@ -163,6 +163,8 @@ class UnlockList(Resource):
                         account_id=user.account_id
                     ).all()
                 }
+                free_hints = {h.id for h in Hints.query.filter((Hints.cost == 0) | (Hints.cost == None)).all() if not h.prerequisites}
+                unlock_ids |= free_hints
                 all_hint_ids = {h.id for h in Hints.query.with_entities(Hints.id).all()}
                 prereqs = set(target.prerequisites).intersection(all_hint_ids)
                 if not unlock_ids >= prereqs:

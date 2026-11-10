@@ -148,17 +148,22 @@ def seed():
         db.session.add(flag)
         db.session.commit()
 
-        # 3. Pistas (si las hay)
+        # 3. Pistas encadenadas secuencialmente
+        prev_hint_id = None
         for i, h in enumerate(HINTS, 1):
-            db.session.add(Hints(
+            reqs = {"prerequisites": [prev_hint_id]} if prev_hint_id else None
+            hint_obj = Hints(
                 challenge_id=challenge.id,
                 title=h["title"],
                 content=h["content"],
                 cost=h["cost"],
                 type="standard",
-            ))
-            print(f"    → Pista {i} (coste {h['cost']} pts)")
-        db.session.commit()
+                requirements=reqs,
+            )
+            db.session.add(hint_obj)
+            db.session.commit()
+            prev_hint_id = hint_obj.id
+            print(f"    → Pista {i} (coste {h['cost']} pts, req={reqs})")
 
         # 4. Tags
         for tag_value in TAGS:

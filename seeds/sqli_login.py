@@ -178,7 +178,26 @@ def seed():
 
     with app.app_context():
         if challenge_exists(CHALLENGE_NAME):
-            print(f"[skip] Reto '{CHALLENGE_NAME}' ya existe — nada que hacer.")
+            existing = Challenges.query.filter_by(name=CHALLENGE_NAME).first()
+            if existing is not None:
+                existing.description = CHALLENGE_DESCRIPTION
+                Hints.query.filter_by(challenge_id=existing.id).delete()
+                prev_hint_id = None
+                for i, h in enumerate(HINTS, start=1):
+                    reqs = {"prerequisites": [prev_hint_id]} if prev_hint_id else None
+                    hint_obj = Hints(
+                        challenge_id=existing.id,
+                        title=h["title"],
+                        content=h["content"],
+                        cost=h["cost"],
+                        type="standard",
+                        requirements=reqs,
+                    )
+                    db.session.add(hint_obj)
+                    db.session.commit()
+                    prev_hint_id = hint_obj.id
+                db.session.commit()
+                print(f"[ok] Reto '{CHALLENGE_NAME}' ya existe — pistas encadenadas actualizadas.")
             return
 
         print(f"[+] Creando reto: {CHALLENGE_NAME} (estado: {challenge_state})")
@@ -209,17 +228,22 @@ def seed():
         db.session.commit()
         print(f"    → Flag: {FLAG_CONTENT}")
 
-        # 3. Pistas
+        # 3. Pistas encadenadas secuencialmente
+        prev_hint_id = None
         for i, h in enumerate(HINTS, start=1):
-            hint = Hints(
+            reqs = {"prerequisites": [prev_hint_id]} if prev_hint_id else None
+            hint_obj = Hints(
                 challenge_id=challenge.id,
                 title=h["title"],
                 content=h["content"],
                 cost=h["cost"],
                 type="standard",
+                requirements=reqs,
             )
-            db.session.add(hint)
-            print(f"    → Pista {i}: coste={h['cost']} pts")
+            db.session.add(hint_obj)
+            db.session.commit()
+            prev_hint_id = hint_obj.id
+            print(f"    → Pista {i}: coste={h['cost']} pts (req={reqs})")
         db.session.commit()
 
         # 4. Tags

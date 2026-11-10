@@ -1374,14 +1374,20 @@ def seed():
         if existing is not None:
             existing.description = CHALLENGE_DESCRIPTION
             Hints.query.filter_by(challenge_id=existing.id).delete()
-            for h in HINTS:
-                db.session.add(Hints(
+            prev_hint_id = None
+            for i, h in enumerate(HINTS, 1):
+                reqs = {"prerequisites": [prev_hint_id]} if prev_hint_id else None
+                hint_obj = Hints(
                     challenge_id=existing.id,
                     title=h["title"],
                     content=h["content"],
                     cost=h["cost"],
                     type="standard",
-                ))
+                    requirements=reqs,
+                )
+                db.session.add(hint_obj)
+                db.session.commit()
+                prev_hint_id = hint_obj.id
             sol = Solutions.query.filter_by(challenge_id=existing.id).first()
             if sol is not None:
                 sol.content = SOLUTION
@@ -1392,7 +1398,7 @@ def seed():
                     state="hidden",
                 ))
             db.session.commit()
-            print(f"[ok] '{CHALLENGE_NAME}' ya existía en la BD — descripción, pistas, solución y ruta /{CHALLENGE_ROUTE} actualizadas.")
+            print(f"[ok] '{CHALLENGE_NAME}' ya existía en la BD — descripción, pistas encadenadas, solución y ruta /{CHALLENGE_ROUTE} actualizadas.")
             return
 
         print(f"[+] Creando reto: {CHALLENGE_NAME!r} ({challenge_state})")
@@ -1421,16 +1427,22 @@ def seed():
         db.session.add(flag)
         db.session.commit()
 
-        # 3. Pistas (si las hay)
+        # 3. Pistas encadenadas secuencialmente
+        prev_hint_id = None
         for i, h in enumerate(HINTS, 1):
-            db.session.add(Hints(
+            reqs = {"prerequisites": [prev_hint_id]} if prev_hint_id else None
+            hint_obj = Hints(
                 challenge_id=challenge.id,
                 title=h["title"],
                 content=h["content"],
                 cost=h["cost"],
                 type="standard",
-            ))
-            print(f"    → Pista {i} (coste {h['cost']} pts)")
+                requirements=reqs,
+            )
+            db.session.add(hint_obj)
+            db.session.commit()
+            prev_hint_id = hint_obj.id
+            print(f"    → Pista {i} (coste {h['cost']} pts, req={reqs})")
         db.session.commit()
 
         # 4. Tags

@@ -158,9 +158,10 @@ class Hint(Resource):
         if hint.prerequisites:
             requirements = hint.prerequisites
 
-            # Get the IDs of all hints that the user has unlocked
+            # Get the IDs of all hints that the user has unlocked or are free
             all_unlocks = HintUnlocks.query.filter_by(account_id=user.account_id).all()
-            unlock_ids = {unlock.target for unlock in all_unlocks}
+            free_hints = {h.id for h in Hints.query.filter((Hints.cost == 0) | (Hints.cost == None)).all() if not h.prerequisites}
+            unlock_ids = {unlock.target for unlock in all_unlocks} | free_hints
 
             # Filter out hint IDs that don't exist
             all_hint_ids = {h.id for h in Hints.query.with_entities(Hints.id).all()}

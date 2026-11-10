@@ -146,13 +146,12 @@
               </div>
             {% endif %}
 
-            {% set _display_hints = challenge.hints if (challenge.hints is defined and challenge.hints) else hints %}
-            {% if _display_hints %}
+            {% if hints %}
               <div class="challenge-hints hint-row row">
                 <div class="col-12 mb-3">
-                {% for hint in _display_hints | sort(attribute="cost") %}
+                {% for hint in hints | sort(attribute="cost") %}
                   <div x-data="Hint" x-init="id = {{ hint.id }}">
-                    {% if hint.content and ((hint.cost or 0) == 0 or not hint.prerequisites) %}
+                    {% if hint.content %}
                     <details>
                       <summary>{% trans %}View Hint{% endtrans %}{% if hint.title %}: {{ hint.title }}{% endif %}</summary>
                       <div>{{ hint.html | safe }}</div>
