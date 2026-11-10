@@ -88,7 +88,7 @@ HINTS = [
     {
         "title":   "Pista 2",
         "content": (
-            "El profesor ha desarrollado con cortafuegos que impide el uso de cierto tipo de palabras."
+            "El profesor ha desarrollado con cortafuegos que impide el uso de cierto tipo de palabras. "
             "¿Has probado a intentar maquillarlas de alguna manera?"
         ),
         "cost":    25,
@@ -96,7 +96,7 @@ HINTS = [
     {
         "title":   "Pista 3",
         "content": (
-            "Hay un ejemplo de cómo funciona un botón con código javascript."
+            "Hay un ejemplo de cómo funciona un botón con código javascript. "
             "Quizás si compruebas el nombre que tiene el id del botón (Ctrl+derecho, Inspeccionar), "
             "puedas crear un script con un contenido parecido al del botón."
         ),

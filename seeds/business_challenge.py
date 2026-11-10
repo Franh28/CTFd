@@ -82,7 +82,7 @@ HINTS = [
         "title":   "Pista 1",
         "content": (
             "En el Panel 3 (Programa de Compañerismo), cada vez que envías 10 InnoCoins o más a un organizador, "
-            "el patrocinador le regala +20 InnoCoins extra al destinatario."
+            "el patrocinador le regala +20 InnoCoins extra al destinatario. "
             "No te mires los pies, piensa fuerte."
         ),
         "cost":    25,   # cuesta 25 puntos
@@ -91,7 +91,7 @@ HINTS = [
         "title":   "Pista 2",
         "content": (
             "Escribe auxiliar_sillas en el campo Destinatario y envía 10 InnoCoins. Te restarán 10, "
-            "pero recibirás 10 + 20 de bono = ¡ganas +20 InnoCoins limpios por clic! Repítelo 5 veces hasta superar los 100 InnoCoins."
+            "pero recibirás 10 + 20 de bono = ¡ganas +20 InnoCoins limpios por clic! Repítelo 5 veces hasta superar los 100 InnoCoins. "
             "Ten en cuenta que puedes pagar 100 InnoCoins para trasladarte a otro comité. "
             "¿Has comprobado el número de miembros de todos los comités?"
         ),
